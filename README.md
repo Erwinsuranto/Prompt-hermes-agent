@@ -4,7 +4,910 @@
 
 # 
 ```
+PHASE 15 — MODULAR BROWSER AUTOMATION & EXTERNAL APP AGENT
 
+Project:
+Hermes Agent
+Repository:
+zenolambee/hermes-agent
+
+STATUS BASELINE:
+- Phase 0–13 sudah selesai.
+- Phase 14 Continuous Learning & Engineering Experience sudah selesai secara lokal.
+- Jangan merusak atau menduplikasi:
+  Agent Core
+  Model Ecosystem
+  Tool System
+  Coding Agent
+  Memory System
+  Autonomous Runtime
+  Telegram
+  GitHub/Google
+  Workflow Engine
+  App Modding
+  App Builder
+  Software Engineering Loop
+  Continuous Learning
+- Reuse infrastructure yang sudah ada.
+- Jangan membuat second implementation dari subsystem yang sudah ada.
+
+TUJUAN PHASE 15:
+
+Bangun fondasi Browser Automation modular untuk Hermes agar agent dapat
+mengoperasikan aplikasi web yang memang diizinkan user, melalui browser
+automation yang terkontrol.
+
+Target jangka panjang:
+Hermes → Browser Agent → External Web App → workflow selesai.
+
+Contoh masa depan:
+Hermes → ContentPilot → Facebook Downloader → ContentPilot Cloud
+
+Tetapi PHASE 15 JANGAN membuat ContentPilot integration khusus dulu.
+Phase ini hanya membangun browser automation foundation dan External App
+Adapter architecture.
+
+==================================================
+1. MODULE
+==================================================
+
+Buat module baru:
+
+modules/browser-automation/
+
+Pisahkan dengan jelas:
+
+- browser types/contracts
+- browser session
+- browser page/navigation
+- browser actions
+- element interaction
+- extraction
+- wait/retry
+- browser state
+- domain policy
+- credential/session reference
+- action audit
+- external app adapter contract
+- browser task orchestration
+- tests
+
+Jangan membuat satu file besar.
+
+==================================================
+2. BROWSER ABSTRACTION
+==================================================
+
+Buat abstraction yang memungkinkan implementation browser diganti tanpa
+mengubah Agent Core.
+
+Contoh capability:
+
+- createSession()
+- navigate()
+- getCurrentUrl()
+- getTitle()
+- click()
+- type()
+- fill()
+- select()
+- press()
+- waitFor()
+- waitForNavigation()
+- extractText()
+- extractAttribute()
+- screenshot()
+- close()
+
+Semua action harus memiliki typed result.
+
+Jangan expose raw browser implementation ke core.
+
+Gunakan interface seperti:
+
+BrowserProvider
+BrowserSession
+BrowserPage
+BrowserElement
+
+Implementation konkret boleh menggunakan Playwright jika dependency dan
+arsitektur repository memang sesuai.
+
+Jangan membuat browser engine sendiri.
+
+==================================================
+3. EXTERNAL APP ADAPTER
+==================================================
+
+Buat abstraction:
+
+ExternalAppAdapter
+
+Minimal metadata:
+
+- id
+- name
+- version
+- domains
+- capabilities
+- authentication mode
+- enabled
+- actions
+
+Contoh masa depan:
+
+ContentPilotAdapter
+
+TAPI JANGAN implement ContentPilot pada Phase 15.
+
+Buat contract agar nanti cukup menambahkan:
+
+modules/external-apps/content-pilot/
+
+tanpa mengubah Browser Core.
+
+==================================================
+4. BROWSER TASK
+==================================================
+
+Browser operation harus memiliki task lifecycle.
+
+Contoh:
+
+PENDING
+→ STARTING
+→ NAVIGATING
+→ INTERACTING
+→ WAITING
+→ EXTRACTING
+→ VERIFYING
+→ COMPLETED
+
+Failure:
+
+→ FAILED
+
+Cancellation:
+
+→ CANCELLED
+
+Pause:
+
+→ PAUSED
+
+Semua state harus fail-closed.
+
+Tidak boleh ada infinite browser loop.
+
+==================================================
+5. ACTION PLAN
+==================================================
+
+Browser agent harus menggunakan structured action plan.
+
+Contoh:
+
+[
+  NAVIGATE,
+  WAIT,
+  CLICK,
+  FILL,
+  SUBMIT,
+  WAIT,
+  EXTRACT,
+  VERIFY
+]
+
+Setiap action harus memiliki:
+
+- action id
+- task id
+- sequence
+- action type
+- target
+- input
+- expected result
+- timeout
+- retry count
+- risk level
+
+Jangan mengizinkan arbitrary JavaScript execution dari model.
+
+Jangan gunakan eval/new Function untuk browser automation.
+
+==================================================
+6. DOMAIN ALLOWLIST
+==================================================
+
+Buat domain policy.
+
+Default:
+
+DENY.
+
+Browser tidak boleh membuka domain arbitrary tanpa policy.
+
+Domain harus:
+
+- normalized
+- validated
+- explicitly allowed
+
+Redirect juga harus diperiksa.
+
+Jangan hanya memeriksa domain URL awal.
+
+Jika redirect berpindah ke domain yang tidak diizinkan:
+
+→ BLOCK.
+
+Buat test untuk:
+
+- allowed domain
+- denied domain
+- subdomain
+- malicious lookalike domain
+- redirect to denied domain
+- URL encoding tricks
+
+==================================================
+7. CREDENTIAL / SESSION SECURITY
+==================================================
+
+Jangan menyimpan:
+
+- password
+- cookies
+- session tokens
+- access tokens
+- API keys
+
+di task payload,
+database plaintext,
+logs,
+screenshots,
+browser action history,
+memory,
+experience,
+prompt context.
+
+Browser session harus menggunakan reference/credential abstraction
+yang sudah ada.
+
+Jangan membuat credential storage kedua.
+
+Session secret harus selalu redacted.
+
+==================================================
+8. LOGIN
+==================================================
+
+Browser Agent boleh mendukung login ke aplikasi yang user memang
+berwenang akses.
+
+Tetapi:
+
+- jangan bypass CAPTCHA
+- jangan bypass MFA
+- jangan bypass anti-bot
+- jangan bypass access control
+- jangan melakukan credential theft
+- jangan melakukan login ke akun tanpa authorization
+
+Jika login membutuhkan user interaction:
+
+→ PAUSE
+→ minta user menyelesaikan langkah tersebut
+→ RESUME setelah authorized session tersedia.
+
+Jangan mencoba mengakali security control.
+
+==================================================
+9. SIDE EFFECT / APPROVAL
+==================================================
+
+Bedakan:
+
+READ_ONLY
+
+dengan:
+
+EXTERNAL_SIDE_EFFECT
+
+READ_ONLY:
+- open page
+- inspect page
+- extract text
+- inspect links
+- screenshot
+
+SIDE EFFECT:
+- submit
+- upload
+- publish
+- send
+- delete
+- modify
+- post
+- download jika menghasilkan external state
+- any irreversible external action
+
+Gunakan approval infrastructure Hermes yang sudah ada.
+
+Jangan membuat approval system kedua.
+
+Approval harus terikat:
+
+- owner
+- task
+- project
+- plan
+- action hash
+
+Jika action berubah setelah approval:
+
+→ approval invalid.
+
+==================================================
+10. IDEMPOTENCY
+==================================================
+
+Browser agent harus mencegah double submission.
+
+Setiap external action harus memiliki idempotency/action identity jika
+secara teknis memungkinkan.
+
+Jika status external action tidak jelas:
+
+JANGAN otomatis submit ulang.
+
+Masuk state:
+
+UNCERTAIN
+
+Kemudian lakukan verification terlebih dahulu.
+
+Ini penting untuk integrasi ContentPilot di masa depan agar video tidak
+dikirim dua kali.
+
+==================================================
+11. RETRY
+==================================================
+
+Implement bounded retry.
+
+Retry hanya untuk error yang memang retryable:
+
+- timeout
+- transient network error
+- temporary unavailable
+- page loading issue
+
+Jangan retry otomatis untuk:
+
+- authorization failure
+- policy denial
+- invalid credential
+- blocked domain
+- user rejection
+- destructive action
+- unknown external state
+
+Semua retry harus memiliki hard ceiling.
+
+==================================================
+12. PAGE STATE
+==================================================
+
+Browser agent harus mampu membedakan:
+
+- page loading
+- page ready
+- navigation pending
+- element unavailable
+- element changed
+- session expired
+- access denied
+- unexpected page
+
+Jangan menganggap click berhasil hanya karena command browser tidak
+menghasilkan exception.
+
+Action harus diverifikasi berdasarkan expected state.
+
+==================================================
+13. SELECTOR SAFETY
+==================================================
+
+Selector berasal dari web page yang tidak dipercaya.
+
+Jangan izinkan page content mengubah:
+
+- system policy
+- permissions
+- credential rules
+- domain allowlist
+- approval requirements
+
+Web page content adalah UNTRUSTED DATA.
+
+Prompt injection dari halaman web harus diperlakukan sebagai data,
+bukan instruction.
+
+Buat security tests:
+
+- malicious text on page
+- hidden prompt injection
+- fake system message
+- fake approval request
+- instruction attempting credential extraction
+- instruction attempting policy modification
+
+==================================================
+14. EXTRACTION
+==================================================
+
+Buat structured extraction.
+
+Support:
+
+- text
+- attributes
+- links
+- metadata
+
+Extraction result harus diberi source/page/action context.
+
+Jangan otomatis memasukkan seluruh halaman web ke system prompt.
+
+Gunakan bounded content size.
+
+Redact secret-looking data sebelum masuk:
+
+- logs
+- memory
+- experience
+- task result
+
+==================================================
+15. SCREENSHOT
+==================================================
+
+Support screenshot sebagai diagnostic artifact.
+
+Tetapi screenshot:
+
+- jangan menyimpan credential secara permanen
+- jangan masuk memory
+- jangan masuk learning experience
+- jangan masuk logs jika mengandung secret
+
+Gunakan retention policy.
+
+==================================================
+16. EXTERNAL APP REGISTRY
+==================================================
+
+Buat registry untuk adapter external apps.
+
+Contoh:
+
+ExternalAppRegistry
+
+Methods:
+
+- register()
+- get()
+- list()
+- enable()
+- disable()
+- resolveByDomain()
+- resolveCapability()
+
+Lifecycle harus konsisten dengan module registry Hermes.
+
+Jangan duplicate ModuleRegistry.
+
+Jika existing registry dapat diperluas, reuse.
+
+==================================================
+17. API
+==================================================
+
+Tambahkan API minimal untuk observability dan controlled execution.
+
+Contoh:
+
+GET
+/api/v1/browser/sessions
+
+GET
+/api/v1/browser/tasks
+
+GET
+/api/v1/browser/tasks/:id
+
+POST
+/api/v1/browser/tasks
+
+POST
+/api/v1/browser/tasks/:id/pause
+
+POST
+/api/v1/browser/tasks/:id/resume
+
+POST
+/api/v1/browser/tasks/:id/cancel
+
+GET
+/api/v1/external-apps
+
+GET
+/api/v1/external-apps/:id
+
+Semua endpoint:
+
+- authentication
+- ownership check
+- validation
+- audit
+- fail-closed
+
+Jangan expose credentials.
+
+==================================================
+18. TELEGRAM
+==================================================
+
+Tambahkan command modular:
+
+/browser
+
+Subcommands minimal:
+
+/browser apps
+/browser tasks
+/browser info <id>
+/browser run
+/browser pause <id>
+/browser resume <id>
+/browser cancel <id>
+
+Jangan membuat Telegram logic baru di core.
+
+Gunakan existing Telegram module.
+
+==================================================
+19. WORKFLOW
+==================================================
+
+Tambahkan workflow steps:
+
+BROWSER_START
+BROWSER_NAVIGATE
+BROWSER_INSPECT
+BROWSER_INTERACT
+BROWSER_WAIT
+BROWSER_EXTRACT
+BROWSER_VERIFY
+BROWSER_COMPLETE
+BROWSER_FAIL
+
+Workflow runner harus menggunakan existing Workflow Engine.
+
+Jangan membuat workflow engine kedua.
+
+Jika runner tidak tersedia:
+
+→ fail closed.
+
+==================================================
+20. TASK QUEUE
+==================================================
+
+Browser tasks harus dapat menggunakan existing:
+
+TaskQueue
+Worker
+Scheduler
+
+Jangan membuat queue baru.
+
+Support:
+
+- enqueue
+- execute
+- retry bounded
+- cancel
+- pause
+- resume
+- checkpoint
+
+==================================================
+21. CHECKPOINT
+==================================================
+
+Browser task checkpoint harus secret-free.
+
+Simpan:
+
+- task id
+- action sequence
+- current state
+- completed actions
+- current page identity
+- safe metadata
+- plan hash
+- action hash
+
+Jangan simpan:
+
+- password
+- cookie
+- token
+- authorization header
+- secret form values
+
+Resume harus memverifikasi state masih valid.
+
+==================================================
+22. MEMORY / CONTINUOUS LEARNING
+==================================================
+
+Gunakan existing Memory dan Phase 14 Continuous Learning.
+
+JANGAN membuat browser memory system.
+
+JANGAN membuat vector database kedua.
+
+Browser experience dapat disimpan sebagai experience hanya setelah
+sanitization.
+
+Contoh experience:
+
+- successful navigation pattern
+- failed selector pattern
+- page structure lesson
+- retry lesson
+- external app workflow lesson
+
+Tetapi web page content sendiri tidak boleh menjadi trusted instruction.
+
+==================================================
+23. SECURITY
+==================================================
+
+Wajib tests untuk:
+
+- SSRF-style navigation attempt
+- localhost navigation
+- private IP navigation
+- internal metadata endpoint navigation
+- unauthorized domain
+- redirect to unauthorized domain
+- credential leakage
+- secret in screenshot
+- secret in logs
+- secret in memory
+- prompt injection from webpage
+- fake approval from webpage
+- stale approval
+- changed action hash
+- duplicate submission
+- infinite retry
+- infinite navigation
+- oversized extraction
+- malicious selector
+- malformed URL
+- javascript: URL
+- data: URL
+- file: URL
+
+Fail closed.
+
+==================================================
+24. RESOURCE LIMITS
+==================================================
+
+Buat hard limits:
+
+- max browser sessions
+- max pages per session
+- max navigation count
+- max actions
+- max retries
+- max task runtime
+- max page content
+- max extraction size
+- max screenshot size
+- max concurrent browser tasks
+
+Semua konfigurabel melalui typed config.
+
+==================================================
+25. TESTING
+==================================================
+
+Tambahkan comprehensive tests.
+
+Minimal:
+
+- browser contracts
+- fake browser provider
+- session lifecycle
+- navigation
+- domain policy
+- redirect policy
+- selector handling
+- extraction
+- retry
+- timeout
+- cancellation
+- pause/resume
+- checkpoint
+- approval
+- stale approval
+- idempotency
+- credential redaction
+- prompt injection
+- SSRF defense
+- API
+- Telegram
+- workflow
+- module registration
+- external app registry
+
+Jangan menggunakan browser asli untuk seluruh test suite.
+
+Gunakan fake/mock browser provider untuk deterministic tests.
+
+Jika Playwright implementation dibuat, tambahkan hanya bounded integration
+tests yang benar-benar diperlukan.
+
+==================================================
+26. NO DUPLICATION
+==================================================
+
+Sebelum coding:
+
+Audit existing repository.
+
+Cari apakah sudah ada:
+
+- browser abstraction
+- HTTP abstraction
+- tool execution
+- permission
+- approval
+- task queue
+- workflow
+- session
+- credential provider
+- module registry
+- audit logger
+- redaction
+- memory
+- continuous learning
+
+Reuse semuanya.
+
+Jangan membuat subsystem kedua.
+
+==================================================
+27. DOCUMENTATION
+==================================================
+
+Buat:
+
+docs/browser-automation.md
+
+Dokumentasikan:
+
+- architecture
+- browser provider
+- ExternalAppAdapter
+- domain policy
+- authentication
+- approvals
+- side effects
+- task lifecycle
+- security
+- adding a new external app
+- testing
+
+Berikan contoh dummy adapter:
+
+ExampleWebAppAdapter
+
+Tetapi jangan connect ke real external service.
+
+==================================================
+28. MIGRATION
+==================================================
+
+Gunakan migration baru hanya jika benar-benar diperlukan.
+
+Jika existing task/workflow tables dapat diperluas:
+
+→ reuse.
+
+Jika membutuhkan storage baru, gunakan migration:
+
+0012_browser_automation.sql
+
+Jangan membuat duplicate task tables jika existing TaskStore dapat
+digunakan.
+
+==================================================
+29. QUALITY GATE
+==================================================
+
+Setelah implementasi:
+
+1. typecheck
+2. lint
+3. format check
+4. unit tests
+5. integration tests
+6. security tests
+7. secret scan
+
+Perbaiki semua failure.
+
+Jangan mengurangi test coverage hanya agar PASS.
+
+==================================================
+30. ANTI-PATTERN
+==================================================
+
+DILARANG:
+
+- eval
+- new Function
+- arbitrary JavaScript execution dari model
+- browser automation tanpa domain policy
+- arbitrary external navigation
+- bypass CAPTCHA
+- bypass MFA
+- bypass anti-bot
+- credential scraping
+- secret persistence
+- duplicate approval system
+- duplicate task queue
+- duplicate workflow engine
+- duplicate memory system
+- infinite loops
+- infinite retries
+- automatic destructive external actions
+- automatic publish without approval
+- automatic external side effect tanpa policy
+- memasukkan webpage instruction ke system prompt
+- menganggap webpage sebagai trusted instruction
+
+==================================================
+31. COMMIT
+==================================================
+
+Jika semua test PASS:
+
+git status
+git diff --stat
+git diff --check
+
+Commit:
+
+feat: add modular browser automation foundation
+
+JANGAN PUSH.
+
+Tampilkan:
+
+- files changed
+- test result
+- security result
+- commit hash
+- git status
+- apakah working tree clean
 ```
 # 
 ```
