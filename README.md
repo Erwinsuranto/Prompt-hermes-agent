@@ -2,6 +2,930 @@
 
 
 
+
+
+# 
+```
+
+```
+# 
+```
+PHASE 16 — CONTENTPILOT EXTERNAL APP ADAPTER
+
+Project:
+Hermes Agent
+
+Repository:
+zenolambee/hermes-agent
+
+BASELINE:
+- Phase 0–14 selesai.
+- Phase 15 Modular Browser Automation Foundation selesai.
+- Phase 15 commit:
+  4cf428f
+- Jangan push.
+- Jangan merusak existing architecture.
+- Jangan membuat subsystem kedua.
+- Reuse Browser Automation, ExternalAppRegistry, Workflow Engine,
+  TaskQueue/Worker, ApprovalService, CredentialProvider,
+  Memory, Continuous Learning, AuditLogger, Telegram, API, dan
+  existing security infrastructure.
+
+TUJUAN:
+
+Implementasi adapter modular untuk ContentPilot.
+
+Target utama:
+
+Hermes
+  ↓
+ContentPilot Adapter
+  ↓
+ContentPilot
+  ↓
+Facebook Downloader / Video Processing
+  ↓
+ContentPilot Cloud
+
+Phase ini TIDAK membuat Facebook downloader sendiri.
+
+Hermes hanya mengorkestrasi ContentPilot.
+
+Hermes juga TIDAK boleh mengakses Facebook private/unavailable,
+membypass CAPTCHA, MFA, anti-bot, atau access control.
+
+==================================================
+1. MODULE
+==================================================
+
+Buat:
+
+modules/external-apps/content-pilot/
+
+Pisahkan:
+
+- types
+- adapter
+- capabilities
+- authentication
+- navigation
+- downloader
+- processing
+- status
+- verification
+- idempotency
+- routes
+- workflow
+- telegram
+- tests
+
+Jangan satu file besar.
+
+==================================================
+2. CONTENTPILOT ADAPTER
+==================================================
+
+Implementasikan:
+
+ContentPilotAdapter
+
+Mengikuti contract ExternalAppAdapter dari Phase 15.
+
+Metadata:
+
+id:
+content-pilot
+
+name:
+ContentPilot
+
+capabilities minimal:
+
+- authenticate
+- inspect
+- submitFacebookUrl
+- inspectDownloadStatus
+- verifyProcessing
+- inspectCloudResult
+
+Jangan hard-code undocumented API endpoints.
+
+==================================================
+3. INTEGRATION MODES
+==================================================
+
+ContentPilot adapter harus mendukung dua mode:
+
+A. API MODE
+
+Jika user menyediakan API integration yang sah:
+
+CONTENTPILOT_INTEGRATION_MODE=api
+
+Gunakan API adapter abstraction.
+
+Jangan mengarang endpoint.
+
+B. BROWSER MODE
+
+Jika API tidak tersedia:
+
+CONTENTPILOT_INTEGRATION_MODE=browser
+
+Gunakan BrowserProvider dari Phase 15.
+
+Browser mode hanya boleh membuka domain yang dikonfigurasi.
+
+Default DENY.
+
+Jangan hard-code credentials.
+
+==================================================
+4. AUTHENTICATION
+==================================================
+
+Gunakan existing CredentialProvider.
+
+Jangan membuat credential store baru.
+
+Support:
+
+- authenticated session reference
+- API credential reference
+- browser session reference
+
+Tidak boleh menyimpan:
+
+- password
+- cookies
+- session token
+- API key
+
+di:
+
+- task payload
+- logs
+- database plaintext
+- memory
+- continuous learning
+- screenshot artifact
+- prompt
+
+Semua secret harus melalui existing redaction.
+
+==================================================
+5. CONTENTPILOT DOMAIN POLICY
+==================================================
+
+Buat konfigurasi:
+
+CONTENTPILOT_ALLOWED_DOMAINS
+
+Default:
+
+DENY
+
+Hanya domain ContentPilot yang secara eksplisit dikonfigurasi user
+yang boleh digunakan browser adapter.
+
+Redirect harus divalidasi ulang.
+
+Tidak boleh:
+
+- localhost
+- private IP
+- metadata endpoint
+- arbitrary domain
+- javascript:
+- data:
+- file:
+
+==================================================
+6. DIRECT FACEBOOK URL HANDOFF
+==================================================
+
+Implementasikan operation:
+
+submitFacebookUrl()
+
+Input:
+
+{
+  facebookUrl,
+  ownerId,
+  projectId?,
+  sourceId?,
+  idempotencyKey
+}
+
+Validasi:
+
+- URL valid
+- HTTPS
+- domain Facebook yang diizinkan
+- no credential embedded
+- no unsupported URL scheme
+- length limit
+- normalized URL
+
+Jangan download Facebook video sendiri.
+
+Jangan membuat Facebook scraping engine.
+
+Hanya serahkan URL ke ContentPilot melalui jalur yang tersedia.
+
+==================================================
+7. CONTENTPILOT FACEBOOK DOWNLOADER
+==================================================
+
+Hermes harus memahami capability:
+
+facebook-downloader
+
+Tetapi capability tersebut hanya memanggil ContentPilot.
+
+Browser mode:
+
+1. open ContentPilot
+2. authenticate existing authorized session
+3. navigate ke Facebook Downloader
+4. fill Facebook URL
+5. submit
+6. wait
+7. inspect result
+8. verify success
+
+API mode:
+
+Gunakan API contract jika user memang memiliki API resmi.
+
+Jangan membuat endpoint palsu.
+
+Jika API capability tidak diketahui:
+
+→ fail closed
+→ laporkan API endpoint belum dikonfigurasi.
+
+==================================================
+8. NO BLIND CLICKING
+==================================================
+
+Browser agent tidak boleh:
+
+click → assume success.
+
+Setiap action harus memiliki expected state.
+
+Contoh:
+
+SUBMIT
+→ WAIT
+→ VERIFY downloader accepted URL
+
+Jika result tidak jelas:
+
+→ UNCERTAIN
+
+Jangan submit ulang.
+
+==================================================
+9. IDEMPOTENCY / DUPLICATE PROTECTION
+==================================================
+
+Ini WAJIB.
+
+Sebelum submit:
+
+check:
+
+- idempotencyKey
+- normalized Facebook URL
+- source video identity jika tersedia
+- previous ContentPilot submission
+- current processing state
+
+Jika video sudah pernah berhasil dikirim:
+
+→ jangan submit ulang.
+
+Jika status:
+
+PROCESSING
+
+→ jangan submit ulang.
+
+Jika status:
+
+UNKNOWN
+
+→ lakukan verification.
+
+Jangan blind retry.
+
+==================================================
+10. STATUS MACHINE
+==================================================
+
+ContentPilot submission lifecycle:
+
+DISCOVERED
+→ READY
+→ SUBMITTING
+→ SUBMITTED
+→ PROCESSING
+→ COMPLETED
+
+Failure:
+
+FAILED
+
+Unknown:
+
+UNCERTAIN
+
+Cancelled:
+
+CANCELLED
+
+Expired:
+
+EXPIRED
+
+Semua transition harus deterministic.
+
+==================================================
+11. PROCESSING VERIFICATION
+==================================================
+
+Implement:
+
+getProcessingStatus()
+
+verifyProcessing()
+
+Status harus berdasarkan evidence.
+
+Jangan menganggap task selesai hanya karena:
+
+- button click sukses
+- page navigation sukses
+- HTTP 200
+
+Harus ada evidence bahwa ContentPilot menerima/memproses item.
+
+==================================================
+12. CLOUD RESULT
+==================================================
+
+Implement capability:
+
+inspectCloudResult()
+
+Hermes hanya memverifikasi bahwa hasil sudah tersedia di ContentPilot
+Cloud jika UI/API menyediakan evidence.
+
+Jangan download/reupload hasil ke platform lain pada Phase 16.
+
+Jangan mengambil alih distribusi ContentPilot.
+
+==================================================
+13. FACEBOOK SOURCE IDENTITY
+==================================================
+
+Buat abstraction:
+
+FacebookVideoIdentity
+
+Support metadata jika tersedia:
+
+- normalized URL
+- Facebook post/video ID
+- source page
+- discoveredAt
+- content hash/reference jika tersedia
+
+Jangan mengandalkan URL saja untuk duplicate detection.
+
+Jika identity tidak dapat dipastikan:
+
+gunakan URL + normalized metadata sebagai fallback.
+
+==================================================
+14. USED VIDEO MEMORY
+==================================================
+
+Integrasikan dengan existing Memory.
+
+JANGAN membuat memory system baru.
+
+Simpan minimal:
+
+- owner
+- project
+- source
+- video identity
+- ContentPilot submission id/reference
+- status
+- timestamps
+
+Memory isolation wajib.
+
+User A tidak boleh melihat history User B.
+
+Project A tidak boleh menggunakan private history Project B.
+
+==================================================
+15. CONTINUOUS LEARNING
+==================================================
+
+Gunakan Phase 14.
+
+Boleh mencatat:
+
+- successful ContentPilot workflow
+- failed navigation pattern
+- retry lesson
+- selector lesson
+- processing lesson
+
+Tetapi:
+
+ContentPilot page text = UNTRUSTED DATA.
+
+Jangan menyimpan:
+
+- password
+- cookies
+- tokens
+- secret values
+- private session content
+
+Sebagai experience.
+
+==================================================
+16. WORKFLOW
+==================================================
+
+Tambahkan workflow steps:
+
+CONTENTPILOT_AUTH
+CONTENTPILOT_OPEN
+CONTENTPILOT_SUBMIT_FACEBOOK
+CONTENTPILOT_WAIT
+CONTENTPILOT_VERIFY
+CONTENTPILOT_PROCESS
+CONTENTPILOT_VERIFY_RESULT
+CONTENTPILOT_COMPLETE
+CONTENTPILOT_FAIL
+
+Gunakan existing Workflow Engine.
+
+Jangan membuat workflow engine baru.
+
+==================================================
+17. TASK QUEUE
+==================================================
+
+Gunakan existing TaskQueue/Worker.
+
+Jangan membuat queue baru.
+
+Support:
+
+- enqueue
+- execute
+- pause
+- resume
+- cancel
+- retry bounded
+- checkpoint
+
+==================================================
+18. APPROVAL
+==================================================
+
+READ_ONLY operations:
+
+- inspect
+- check status
+- verify result
+
+SIDE EFFECT:
+
+- submit Facebook URL
+- trigger download
+- trigger processing
+- any external mutation
+
+Gunakan existing ApprovalService.
+
+Approval harus bound ke:
+
+- owner
+- project
+- task
+- plan
+- action hash
+
+Jika action berubah:
+
+→ approval invalid.
+
+Jangan membuat approval service baru.
+
+==================================================
+19. USER COMMAND
+==================================================
+
+API:
+
+POST
+/api/v1/content-pilot/tasks
+
+Body:
+
+{
+  facebookUrl,
+  projectId?,
+  mode?
+}
+
+GET:
+
+/api/v1/content-pilot/tasks
+
+GET:
+
+/api/v1/content-pilot/tasks/:id
+
+POST:
+
+/api/v1/content-pilot/tasks/:id/verify
+
+POST:
+
+/api/v1/content-pilot/tasks/:id/pause
+
+POST:
+
+/api/v1/content-pilot/tasks/:id/resume
+
+POST:
+
+/api/v1/content-pilot/tasks/:id/cancel
+
+Semua:
+
+- auth
+- ownership
+- validation
+- audit
+- rate limit if existing infrastructure supports it
+- no secrets in response
+
+==================================================
+20. TELEGRAM
+==================================================
+
+Tambahkan:
+
+/contentpilot
+
+Subcommands:
+
+/contentpilot status
+/contentpilot submit <facebook-url>
+/contentpilot info <task-id>
+/contentpilot verify <task-id>
+/contentpilot pause <task-id>
+/contentpilot resume <task-id>
+/contentpilot cancel <task-id>
+
+Jangan membuat Telegram core baru.
+
+==================================================
+21. FUTURE SOURCE ARCHITECTURE
+==================================================
+
+Jangan mengunci adapter hanya untuk Facebook.
+
+Buat source abstraction:
+
+MediaSource
+
+Contoh future implementations:
+
+FacebookSource
+YouTubeSource
+InstagramSource
+TikTokSource
+DirectVideoSource
+LocalFileSource
+
+PHASE 16 hanya implement FacebookSource contract yang diperlukan
+untuk ContentPilot.
+
+Jangan implement downloader lain sekarang.
+
+==================================================
+22. FUTURE CONTENTPILOT PIPELINE
+==================================================
+
+Arsitektur harus memungkinkan Phase berikutnya:
+
+Facebook sources
+     ↓
+Video discovery
+     ↓
+Duplicate check
+     ↓
+Video scoring
+     ↓
+ContentPilot
+     ↓
+Downloader
+     ↓
+Cloud
+     ↓
+Distribution
+
+Tetapi Phase 16 hanya:
+
+Facebook URL
+→ ContentPilot
+→ verify processing/result
+
+Jangan implement autonomous video discovery sekarang.
+
+==================================================
+23. BROWSER SECURITY
+==================================================
+
+Reuse Phase 15.
+
+Webpage content is UNTRUSTED.
+
+ContentPilot page tidak boleh:
+
+- mengubah Hermes policy
+- mengubah permissions
+- mengambil credential
+- mengubah domain allowlist
+- membuat approval sendiri
+- mengubah task owner
+- memerintahkan Hermes membuka domain lain
+
+Buat tests untuk prompt injection.
+
+==================================================
+24. ERROR HANDLING
+==================================================
+
+Handle:
+
+- authentication required
+- authentication expired
+- domain denied
+- URL invalid
+- Facebook URL unsupported
+- ContentPilot unavailable
+- downloader unavailable
+- processing timeout
+- result unavailable
+- unknown state
+- duplicate submission
+- approval expired
+- browser timeout
+- API unavailable
+
+Setiap error harus typed.
+
+Jangan return generic "something went wrong" saja.
+
+==================================================
+25. RETRY
+==================================================
+
+Retry hanya untuk transient failure.
+
+Jangan retry:
+
+- auth failure
+- permission denied
+- invalid URL
+- duplicate
+- approval failure
+- policy violation
+- uncertain external state
+
+Hard limit.
+
+==================================================
+26. SECURITY TESTS
+==================================================
+
+Wajib:
+
+- unauthorized ContentPilot domain
+- redirect outside allowed domain
+- malicious Facebook URL
+- javascript URL
+- data URL
+- localhost URL
+- private IP
+- credential injection
+- credential leakage
+- prompt injection
+- fake ContentPilot system message
+- fake approval
+- stale approval
+- changed action hash
+- duplicate Facebook URL
+- duplicate task
+- processing unknown state
+- browser session expiration
+- ownership isolation
+- project isolation
+- secret redaction
+- audit redaction
+
+==================================================
+27. TESTING
+==================================================
+
+Gunakan FakeBrowserProvider untuk deterministic tests.
+
+Jangan memerlukan real ContentPilot credentials untuk unit tests.
+
+Buat:
+
+- adapter unit tests
+- browser integration tests
+- API tests
+- workflow tests
+- Telegram tests
+- security tests
+- idempotency tests
+- state machine tests
+- ownership tests
+- redaction tests
+
+Jika real ContentPilot smoke test diperlukan:
+
+buat sebagai OPTIONAL integration test yang hanya berjalan jika explicit
+environment variables tersedia.
+
+Jangan menjalankan real external account tests by default.
+
+==================================================
+28. DOCUMENTATION
+==================================================
+
+Buat:
+
+docs/content-pilot.md
+
+Isi:
+
+- architecture
+- API mode
+- browser mode
+- credentials
+- allowed domains
+- Facebook URL flow
+- status lifecycle
+- duplicate protection
+- approval
+- security
+- troubleshooting
+- future source adapters
+
+Penting:
+
+Jangan mengklaim API endpoint tertentu jika belum diberikan/didokumentasikan.
+
+==================================================
+29. CONFIG
+==================================================
+
+Tambahkan typed configuration:
+
+CONTENTPILOT_ENABLED=false
+CONTENTPILOT_INTEGRATION_MODE=browser
+CONTENTPILOT_ALLOWED_DOMAINS=
+CONTENTPILOT_MAX_RUNTIME_MS=
+CONTENTPILOT_MAX_RETRIES=
+
+Jangan commit secrets.
+
+Gunakan existing config loader.
+
+==================================================
+30. MIGRATION
+==================================================
+
+Reuse existing TaskStore jika memungkinkan.
+
+Jika storage khusus benar-benar diperlukan:
+
+gunakan migration:
+
+0013_content_pilot.sql
+
+Jangan duplicate task tables.
+
+Storage minimal:
+
+- content pilot task/reference
+- source identity
+- submission state
+- idempotency
+- safe external reference
+- timestamps
+
+Tidak menyimpan credentials.
+
+==================================================
+31. QUALITY GATE
+==================================================
+
+Run:
+
+pnpm typecheck
+pnpm lint
+pnpm format:check
+pnpm test
+
+Jika scripts berbeda, gunakan scripts repository yang benar.
+
+Jalankan security tests.
+
+Run secret scan.
+
+Run:
+
+git diff --check
+git status
+
+Perbaiki seluruh failure.
+
+==================================================
+32. ANTI-PATTERN
+==================================================
+
+DILARANG:
+
+- membuat Facebook downloader sendiri
+- scraping private Facebook
+- login bypass
+- CAPTCHA bypass
+- MFA bypass
+- anti-bot bypass
+- credential scraping
+- fake API endpoint
+- mengarang ContentPilot API
+- arbitrary browser navigation
+- arbitrary JavaScript
+- eval
+- new Function
+- duplicate TaskQueue
+- duplicate Workflow Engine
+- duplicate Memory
+- duplicate ApprovalService
+- infinite retry
+- blind resubmit
+- automatic publish ke Facebook
+- automatic distribution logic pada Phase 16
+
+==================================================
+33. COMMIT
+==================================================
+
+Jika semua PASS:
+
+git status
+git diff --stat
+git diff --check
+
+Commit:
+
+feat: add ContentPilot external app adapter
+
+JANGAN PUSH.
+
+Tampilkan:
+
+- files changed
+- tests
+- security tests
+- typecheck
+- lint
+- format
+- secret scan
+- commit hash
+- git status
+- apakah working tree clean
+```
 # 
 ```
 PHASE 15 — MODULAR BROWSER AUTOMATION & EXTERNAL APP AGENT
