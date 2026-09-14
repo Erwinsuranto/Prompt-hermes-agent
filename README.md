@@ -38,7 +38,390 @@
 ```
 # 
 ```
+HERMES AGENT — PRODUCTION DEPLOYMENT
+====================================
 
+Audit deployment sebelumnya menyatakan:
+
+STATUS: READY
+
+Server memiliki resource yang cukup.
+Sekarang lanjutkan deployment Hermes Agent ke VPS INI.
+
+TARGET:
+- Deploy Hermes Agent pada server ini.
+- Gunakan repository Hermes yang sudah ada.
+- Jangan mengganggu aplikasi/service existing.
+- Facebook tetap DEFERRED.
+- Jangan membuat downloader Facebook.
+- Jangan membuat automatic model binding/fallback.
+- Model tetap dipilih manual.
+
+
+============================================================
+STEP 1 — FINAL PRE-FLIGHT
+============================================================
+
+Sebelum melakukan perubahan:
+
+1. Pastikan repository Hermes benar.
+2. Pastikan working tree clean.
+3. Catat current commit.
+4. Catat service/process existing.
+5. Catat port existing.
+6. Pastikan port Hermes yang direncanakan tidak bentrok.
+7. Pastikan database yang akan digunakan tidak mengganggu database existing.
+8. Pastikan reverse proxy yang akan digunakan tidak merusak site existing.
+
+Jangan menghapus atau menghentikan service existing.
+
+
+============================================================
+STEP 2 — ENVIRONMENT
+============================================================
+
+Siapkan production environment Hermes.
+
+Gunakan konfigurasi repository yang sebenarnya.
+
+API_PORT=3001
+
+Buat/siapkan production environment sesuai kebutuhan Hermes.
+
+PENTING:
+
+- Jangan menampilkan secret ke terminal output.
+- Jangan menampilkan API key.
+- Jangan menampilkan password.
+- Jangan menampilkan token.
+- Jangan commit .env.
+- Jangan memasukkan secret ke Git.
+- Jangan memasukkan secret ke Docker image.
+
+Jika GLM/DeepSeek API key belum tersedia:
+- jangan membuat fake key
+- jangan menggunakan placeholder sebagai credential aktif
+- provider tetap unavailable sampai user memasukkan credential yang valid.
+
+Pastikan .env masuk .gitignore.
+
+
+============================================================
+STEP 3 — DATABASE
+============================================================
+
+Audit database configuration Hermes.
+
+Jika Hermes menggunakan PostgreSQL/SQLite/Redis atau storage lain, gunakan architecture yang memang ditemukan di repository.
+
+JANGAN membuat database baru jika existing deployment architecture sudah menyediakan database yang sesuai.
+
+Jika database Hermes memang belum ada:
+
+1. buat database/user khusus Hermes
+2. gunakan credential production
+3. jangan tampilkan password
+4. jangan mengganggu database aplikasi lain
+
+Jalankan migration HANYA jika repository memiliki migration system yang memang diperlukan.
+
+Sebelum migration:
+- inspect migration
+- pastikan target database benar
+- jangan melakukan destructive migration
+
+Setelah migration:
+- verifikasi schema.
+
+
+============================================================
+STEP 4 — DEPENDENCIES & BUILD
+============================================================
+
+Install dependency menggunakan package manager repository.
+
+Gunakan lockfile yang sudah ada.
+
+Jangan mengganti package manager.
+
+Jalankan production build.
+
+Pastikan build berhasil.
+
+Jangan menjalankan live AI inference pada tahap build.
+
+
+============================================================
+STEP 5 — START SERVICE
+============================================================
+
+Tentukan mekanisme production service berdasarkan audit sebelumnya.
+
+Jika architecture Hermes cocok menggunakan systemd:
+
+buat service:
+
+hermes-agent.service
+
+Service harus:
+
+- berjalan sebagai user non-root jika memungkinkan
+- menggunakan production environment
+- restart otomatis jika crash
+- menggunakan working directory Hermes
+- menjalankan production start command yang benar
+- tidak mencetak secret
+- tidak menjalankan development server
+
+Jika repository membutuhkan worker/scheduler terpisah:
+
+buat service terpisah hanya jika memang diperlukan.
+
+Contoh:
+
+hermes-agent.service
+hermes-agent-worker.service
+hermes-agent-scheduler.service
+
+Jangan membuat service yang tidak diperlukan.
+
+
+============================================================
+STEP 6 — NETWORK
+============================================================
+
+Hermes API listen pada:
+
+127.0.0.1:3001
+
+JANGAN expose port 3001 langsung ke internet jika reverse proxy tersedia.
+
+Pastikan service dapat diakses dari localhost.
+
+
+============================================================
+STEP 7 — HEALTH CHECK
+============================================================
+
+Gunakan existing health endpoint jika sudah tersedia.
+
+Jika endpoint health yang ditemukan misalnya:
+
+/health
+atau
+/healthz
+
+gunakan endpoint tersebut.
+
+Jangan membuat endpoint duplicate.
+
+Test:
+
+localhost → Hermes
+
+Health check harus:
+
+- HTTP success
+- tidak memerlukan AI API key
+- tidak membocorkan secret
+
+
+============================================================
+STEP 8 — CADDY / REVERSE PROXY
+============================================================
+
+Audit Caddy yang sudah ada.
+
+JANGAN menghapus site block existing.
+
+Tambahkan Hermes sebagai site baru hanya jika domain target sudah ditentukan.
+
+Jika domain Hermes BELUM ditentukan:
+
+- jangan mengarang domain
+- jangan mengubah DNS
+- jangan membuat site block dengan domain palsu
+
+Dalam kondisi tersebut:
+- Hermes tetap dijalankan di localhost:3001
+- health check lokal dilakukan
+- deployment dianggap service-ready
+- berhenti sebelum konfigurasi domain publik
+
+Jika domain sudah dikonfigurasi sebelumnya dan memang ditujukan untuk Hermes:
+gunakan domain tersebut.
+
+HTTPS harus menggunakan konfigurasi Caddy yang benar.
+
+
+============================================================
+STEP 9 — SERVICE VERIFICATION
+============================================================
+
+Setelah service dijalankan:
+
+periksa:
+
+- service status
+- process
+- listening port
+- health endpoint
+- recent logs
+
+Pastikan tidak ada:
+
+- crash loop
+- missing environment variable
+- database connection failure
+- permission error
+- port conflict
+
+
+============================================================
+STEP 10 — SECURITY VERIFICATION
+============================================================
+
+Pastikan:
+
+- .env tidak tracked Git
+- secret tidak masuk logs
+- port 3001 tidak perlu public
+- service tidak berjalan sebagai root jika memungkinkan
+- production error tidak membocorkan secret
+- API key tidak muncul di process output
+- API key tidak muncul pada git diff
+- API key tidak muncul pada build artifact
+
+
+============================================================
+STEP 11 — LIVE AI
+============================================================
+
+JANGAN menjalankan live AI inference otomatis.
+
+Deployment harus diverifikasi terlebih dahulu.
+
+Setelah Hermes service sehat, tampilkan command smoke test Phase 26 yang benar untuk:
+
+Muse
+DeepSeek
+GLM
+
+Tetapi jangan menjalankannya kecuali memang diperlukan untuk deployment verification.
+
+Model harus dipilih manual.
+
+Tidak ada automatic fallback.
+
+
+============================================================
+STEP 12 — GIT
+============================================================
+
+Deployment configuration yang aman boleh disimpan jika memang diperlukan repository.
+
+JANGAN commit:
+
+- .env
+- API key
+- password
+- token
+- credential
+
+Setelah deployment:
+
+tampilkan:
+
+git status
+git diff --stat
+
+Jangan git push.
+
+
+============================================================
+STEP 13 — FINAL DEPLOYMENT REPORT
+============================================================
+
+Tampilkan:
+
+HERMES DEPLOYMENT RESULT
+
+Server:
+- OS:
+- CPU:
+- RAM:
+- Disk:
+
+Repository:
+- path:
+- branch:
+- commit:
+- working tree:
+
+Runtime:
+- Node:
+- package manager:
+- build:
+- start command:
+
+Database:
+- type:
+- status:
+- migration:
+- connection:
+
+Services:
+- Hermes API:
+- Worker:
+- Scheduler:
+
+Network:
+- bind address:
+- port:
+- public exposure:
+
+Health:
+- endpoint:
+- result:
+
+Reverse proxy:
+- Caddy:
+- domain:
+- HTTPS:
+
+Security:
+- .env protected:
+- secrets protected:
+- secret scan:
+
+Git:
+- changed files:
+- commit:
+- push: NO
+
+AI:
+- Muse:
+- DeepSeek:
+- GLM:
+- live inference: NOT RUN
+
+Facebook:
+- DEFERRED
+
+FINAL STATUS:
+
+Jika Hermes service sudah berjalan dan health check berhasil:
+
+DEPLOYMENT SUCCESS — HERMES SERVICE ONLINE
+
+Jika service online tetapi domain belum dikonfigurasi:
+
+DEPLOYMENT SUCCESS — LOCAL SERVICE ONLINE, DOMAIN PENDING
+
+Jika ada masalah:
+DEPLOYMENT BLOCKED
+
+Jangan menyatakan sukses jika service sebenarnya belum sehat.
 ```
 # 
 ```
