@@ -18,7 +18,413 @@
 ```
 # 
 ```
+HERMES — FIX GLM PROVIDER CONFIGURATION
+=======================================
 
+Masalah:
+Saat ini Hermes hanya meminta GLM5_3_API_KEY, tetapi konfigurasi GLM runtime belum lengkap.
+
+Kita membutuhkan konfigurasi production yang jelas untuk:
+
+1. GLM Base URL
+2. GLM API Key
+3. GLM Model ID / model selection
+
+PENTING:
+User memilih model secara MANUAL.
+Jangan membuat automatic model selection.
+Jangan membuat fallback.
+Jangan membuat automatic model switching.
+
+
+============================================================
+STEP 1 — AUDIT EXISTING PROVIDER ARCHITECTURE
+============================================================
+
+Audit repository terlebih dahulu.
+
+Cari:
+
+- provider registry
+- provider adapters
+- model registry
+- model configuration
+- environment configuration
+- existing provider base URL pattern
+- existing API key pattern
+- Model Router
+
+Cari apakah sudah ada provider GLM.
+
+Jika sudah ada:
+PERBAIKI provider tersebut.
+
+JANGAN membuat provider GLM kedua/duplikat.
+
+
+============================================================
+STEP 2 — GLM ENV CONFIGURATION
+============================================================
+
+Tambahkan configuration production yang jelas untuk GLM.
+
+Gunakan nama environment variable yang konsisten dengan architecture existing.
+
+Minimal harus tersedia:
+
+GLM_BASE_URL
+GLM5_3_API_KEY
+
+Untuk model:
+gunakan model registry/existing model configuration.
+
+Jika architecture project memang membutuhkan environment variable model, gunakan:
+
+GLM_MODEL
+
+Tetapi JANGAN memaksa GLM_MODEL jika model memang sudah dikelola oleh Model Registry.
+
+Prinsip:
+
+Base URL = konfigurasi provider
+API Key = credential provider
+Model ID = pilihan model
+
+Jangan mencampurkan ketiganya.
+
+
+============================================================
+STEP 3 — BASE URL
+============================================================
+
+Jangan mengarang Base URL.
+
+Periksa provider GLM yang memang digunakan oleh Hermes.
+
+Jika provider menggunakan API resmi GLM/Zhipu:
+gunakan Base URL resmi yang sesuai dengan SDK/API implementation yang sudah dipakai.
+
+Jika provider menggunakan endpoint proxy:
+gunakan Base URL proxy yang memang dikonfigurasi untuk Hermes.
+
+Jika repository belum menentukan provider endpoint:
+JANGAN membuat URL palsu.
+
+Tampilkan Base URL yang dibutuhkan dan alasan pemilihannya.
+
+Base URL production harus dapat diubah melalui:
+
+GLM_BASE_URL
+
+tanpa mengubah source code.
+
+
+============================================================
+STEP 4 — API KEY
+============================================================
+
+Credential harus dibaca dari:
+
+GLM5_3_API_KEY
+
+Jangan hardcode.
+
+Jangan menyimpan API key di:
+
+- source code
+- model registry
+- agent profile
+- README
+- documentation
+- git
+- Docker image
+
+Tambahkan ke .env.example hanya sebagai nama variable, contoh:
+
+GLM5_3_API_KEY=
+
+Jangan memasukkan credential asli ke .env.example.
+
+
+============================================================
+STEP 5 — PRODUCTION .ENV
+============================================================
+
+Update:
+
+/root/hermes-agent/.env
+
+Tambahkan configuration:
+
+GLM_BASE_URL=<base-url yang benar>
+GLM5_3_API_KEY=<credential user>
+
+JANGAN menampilkan value API key di terminal output.
+
+Jika API key belum tersedia:
+
+buat variable kosong saja dan laporkan:
+
+GLM5_3_API_KEY = NOT SET
+
+Jangan membuat fake key.
+
+
+============================================================
+STEP 6 — MODEL REGISTRY
+============================================================
+
+Audit model GLM yang benar-benar tersedia di Model Registry.
+
+Tampilkan:
+
+- model ID
+- provider
+- enabled
+- capability
+
+Jangan membuat model ID palsu.
+
+Jika model GLM belum terdaftar:
+tambahkan hanya berdasarkan model yang memang didukung provider yang dikonfigurasi.
+
+Jangan memilih model otomatis.
+
+User tetap menentukan:
+
+agent + model
+
+
+============================================================
+STEP 7 — MODEL ROUTER
+============================================================
+
+Pastikan routing:
+
+agent_id
++
+explicit model_id
+
+→ Model Router
+→ GLM provider
+→ GLM_BASE_URL
+→ GLM5_3_API_KEY
+→ response
+
+Tidak boleh:
+
+agent
+→ automatic GLM model
+
+Tidak boleh:
+
+GLM model gagal
+→ fallback model
+
+Tidak boleh:
+
+provider gagal
+→ provider lain otomatis
+
+
+============================================================
+STEP 8 — CONFIG VALIDATION
+============================================================
+
+Tambahkan validation yang aman:
+
+Jika GLM provider digunakan:
+
+GLM_BASE_URL harus valid.
+
+GLM5_3_API_KEY harus tersedia.
+
+Jika salah satu tidak tersedia:
+
+Provider status:
+
+NOT_READY / UNAVAILABLE
+
+Jangan crash seluruh Hermes jika GLM credential belum tersedia.
+
+Error harus aman dan tidak menampilkan credential.
+
+
+============================================================
+STEP 9 — SECURITY
+============================================================
+
+Tambahkan test:
+
+- API key tidak muncul di logs
+- API key tidak muncul di error response
+- API key tidak muncul di git diff
+- API key tidak muncul di documentation
+- Base URL dapat dikonfigurasi
+- invalid URL ditolak
+- model ID tidak dapat melakukan path traversal
+- provider tidak dapat menaikkan permission
+- model response tidak dieksekusi
+- automatic fallback tetap disabled
+
+
+============================================================
+STEP 10 — RESTART SERVICE
+============================================================
+
+Setelah konfigurasi kode selesai:
+
+JANGAN langsung restart jika tidak diperlukan.
+
+Jika perubahan hanya source/config yang memang membutuhkan restart:
+
+restart hanya:
+
+hermes-agent.service
+
+Jangan restart service lain.
+
+Setelah restart:
+
+- systemctl status hermes-agent
+- /health
+- /ready
+
+Pastikan:
+
+service ACTIVE
+health 200
+ready OK
+
+
+============================================================
+STEP 11 — PROVIDER CHECK
+============================================================
+
+Jalankan pre-live check.
+
+Expected:
+
+GLM Provider:
+AVAILABLE / READY
+
+jika:
+
+GLM_BASE_URL = SET
+GLM5_3_API_KEY = SET
+
+Jika credential belum tersedia:
+
+GLM Provider:
+NOT READY
+
+Jangan fake success.
+
+
+============================================================
+STEP 12 — DOCUMENTATION
+============================================================
+
+Update:
+
+docs/deployment.md
+
+dan dokumentasi provider jika memang sudah ada.
+
+Dokumentasikan:
+
+GLM_BASE_URL
+GLM5_3_API_KEY
+model selection manual
+
+Jangan dokumentasikan credential asli.
+
+
+============================================================
+STEP 13 — TEST
+============================================================
+
+Jalankan:
+
+- tests
+- typecheck
+- lint
+- format
+- security
+- secret scan
+
+Jangan menjalankan live inference otomatis.
+
+
+============================================================
+STEP 14 — GIT
+============================================================
+
+Pastikan:
+
+.env
+tidak tracked.
+
+Pastikan tidak ada secret di diff.
+
+Tampilkan:
+
+git status
+git diff --stat
+git diff --check
+
+Commit perubahan:
+
+fix: configure GLM provider runtime
+
+JANGAN push.
+
+
+============================================================
+FINAL REPORT
+============================================================
+
+GLM PROVIDER CONFIGURATION
+
+Provider:
+- existing provider:
+- status:
+
+Configuration:
+- GLM_BASE_URL: SET / NOT SET
+- GLM5_3_API_KEY: SET / NOT SET
+- model configuration:
+
+Models:
+- model IDs:
+
+Runtime:
+- Model Router:
+- manual model selection:
+- automatic fallback:
+
+Service:
+- status:
+- health:
+- ready:
+
+Security:
+- secret scan:
+- .env protected:
+
+Tests:
+- passed:
+- failed:
+
+Git:
+- commit:
+- push: NO
+
+PENTING:
+Jangan tampilkan API key value.
+Jangan tampilkan credential.
+Jangan membuat provider/model palsu.
+Jangan melakukan live inference pada fase ini.
 ```
 # 
 ```
