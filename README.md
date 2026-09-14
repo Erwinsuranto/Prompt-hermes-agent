@@ -66,7 +66,684 @@
 ```
 # 
 ```
+PHASE 22 — AI AGENT PROFILE & CONTEXT SYSTEM
 
+PROJECT:
+Hermes Agent
+
+TUJUAN:
+Bangun sistem profile AI/Agent yang menggunakan struktur Phase 20 dan Phase 21.
+
+Setiap AI nantinya dapat memiliki:
+
+ai/agents/<id>/agent.md
+
+Contoh:
+
+ai/agents/muse/agent.md
+ai/agents/deepseek/agent.md
+ai/agents/glm/agent.md
+
+Tetapi Phase 22 TIDAK mengisi konfigurasi nyata Muse, DeepSeek, atau GLM.
+
+==================================================
+ATURAN UTAMA
+==================================================
+
+1. Jangan mengubah file raw:
+   ai/learning/sources/temporary/muse-spark-1.3.md
+
+2. Jangan menghapus Muse Spark.
+3. Jangan mengubah isi Muse Spark.
+4. Jangan menyalin isi Muse Spark.
+5. Jangan menerapkan hasil Muse Spark ke agent.
+6. Jangan membuat Muse AI operasional.
+7. Jangan membuat DeepSeek AI operasional.
+8. Jangan membuat GLM AI operasional.
+9. Jangan melakukan live provider/API call.
+10. Jangan membuat system prompt berdasarkan Muse Spark.
+11. Jangan membuat policy baru yang menggantikan policy existing.
+12. Jangan membuat Model Router baru.
+13. Jangan membuat Memory baru.
+14. Jangan membuat Learning Engine baru.
+15. Jangan mengubah frontend.
+16. Jangan merusak Phase 20/21.
+17. Jangan push otomatis.
+18. Jangan membuat fake AI inference.
+
+Gunakan architecture yang sudah ada.
+
+==================================================
+1. AUDIT
+==================================================
+
+Audit terlebih dahulu:
+
+- modules/ai-registry
+- ai/
+- AI Registry Phase 20
+- Agent Registry
+- Agent Manifest
+- Capability Resolver
+- Context Builder
+- Model Router
+- Tool Registry
+- Permission/Approval
+- Memory
+- Learning
+
+Jangan membuat abstraction duplicate.
+
+==================================================
+2. AGENT PROFILE
+==================================================
+
+Buat contract untuk Agent Profile.
+
+Profile harus memisahkan:
+
+IDENTITY
+- id
+- name
+- version
+- type
+- description
+
+ROLE
+- role
+- purpose
+- responsibilities
+
+BEHAVIOR
+- operating style
+- communication style
+- decision preferences
+
+CAPABILITIES
+- capabilities
+- skills
+
+TOOLS
+- allowed/required tool references
+
+MODEL
+- preferred models
+- fallback models
+
+CONTEXT
+- required context
+- optional context
+- excluded context
+
+PERMISSIONS
+- declared permissions
+
+MEMORY
+- memory requirements
+
+LEARNING
+- learning configuration
+
+LIFECYCLE
+- enabled/disabled
+- status
+
+==================================================
+3. AGENT.MD CONTRACT
+==================================================
+
+Perbaiki/standarkan contract agent.md jika diperlukan.
+
+Format:
+
+---
+id:
+name:
+version:
+type:
+status:
+role:
+capabilities:
+skills:
+tools:
+permissions:
+preferred_models:
+fallback_models:
+context:
+memory:
+learning:
+---
+
+# Role
+
+# Purpose
+
+# Responsibilities
+
+# Behavior
+
+# Capabilities
+
+# Skills
+
+# Tools
+
+# Context Requirements
+
+# Memory
+
+# Learning
+
+# Constraints
+
+Jangan mengisi contoh dengan instruksi Muse Spark.
+
+Gunakan placeholder generik.
+
+==================================================
+4. PROFILE LOADER
+==================================================
+
+Implementasikan loader untuk:
+
+ai/agents/<id>/agent.md
+
+Loader harus:
+
+- membaca file yang berada di lokasi agent yang diizinkan
+- parse frontmatter
+- parse section yang didukung
+- validate schema
+- reject unknown/invalid critical fields
+- menghasilkan Agent Profile terstruktur
+
+Jangan menjalankan markdown sebagai code.
+
+Markdown adalah configuration/data.
+
+==================================================
+5. PROFILE VALIDATION
+==================================================
+
+Validasi:
+
+- valid ID
+- valid version
+- valid status
+- valid type
+- valid capabilities
+- valid skills
+- valid tool references
+- valid model references
+- valid permission references
+- valid context configuration
+
+Reject:
+
+- malformed frontmatter
+- duplicate keys
+- unsupported fields
+- invalid types
+- invalid references
+- path traversal
+- executable content
+- secret-like fields
+
+Jangan menyimpan credential di profile.
+
+==================================================
+6. PROFILE → REGISTRY
+==================================================
+
+Integrasikan profile dengan AI/Agent Registry Phase 20.
+
+Flow:
+
+agent.md
+ ↓
+Profile Loader
+ ↓
+Profile Validator
+ ↓
+Agent Registry
+ ↓
+Capability Resolver
+ ↓
+Context Builder
+ ↓
+Model Router
+
+Jangan membuat Registry baru.
+
+==================================================
+7. PROFILE → CAPABILITY ROUTING
+==================================================
+
+Capability Resolver dapat menggunakan profile:
+
+capabilities
+skills
+tools
+model compatibility
+status
+
+Agent disabled harus tetap tidak dapat dipilih.
+
+Selection harus deterministic.
+
+Jangan memilih provider secara langsung.
+
+==================================================
+8. PROFILE → CONTEXT
+==================================================
+
+Context Builder harus membaca context requirements dari profile.
+
+Contoh konseptual:
+
+context:
+  required:
+    - task
+    - project
+  optional:
+    - relevant_memory
+  excluded:
+    - unrelated_projects
+
+Jangan memuat seluruh repository.
+
+Jangan memuat seluruh memory.
+
+Jangan memuat semua agent.md.
+
+Gunakan JIT/progressive context loading.
+
+==================================================
+9. CONTEXT BOUNDARIES
+==================================================
+
+Tambahkan batas:
+
+- maximum profile size
+- maximum context entries
+- maximum loaded skills
+- maximum loaded memory
+- maximum context tokens/characters sesuai architecture existing
+
+Jika melebihi limit:
+
+return deterministic error atau bounded result.
+
+Jangan silently membuat context tidak terbatas.
+
+==================================================
+10. IDENTITY VS MODEL
+==================================================
+
+Pastikan:
+
+Agent Profile
+!=
+Model
+
+Contoh:
+
+Muse AI
+  ↓
+Agent Profile
+  ↓
+Model Router
+  ↓
+configured model
+
+DeepSeek AI
+  ↓
+Agent Profile
+  ↓
+Model Router
+  ↓
+configured model
+
+GLM AI
+  ↓
+Agent Profile
+  ↓
+Model Router
+  ↓
+configured model
+
+Jangan hardcode provider.
+
+==================================================
+11. BEHAVIOR
+==================================================
+
+Profile boleh mendeskripsikan behavior/communication style.
+
+Tetapi:
+
+- tidak boleh override system security
+- tidak boleh override application policy
+- tidak boleh memberikan permission
+- tidak boleh memberikan tool access
+- tidak boleh bypass approval
+- tidak boleh bypass Model Router
+- tidak boleh bypass Supervisor
+
+Profile adalah configuration, bukan security authority.
+
+==================================================
+12. TOOL DECLARATION
+==================================================
+
+Profile dapat mendeklarasikan:
+
+tools:
+  - github
+  - browser
+  - filesystem
+
+Tetapi deklarasi tersebut TIDAK otomatis memberikan akses.
+
+Runtime harus tetap memeriksa:
+
+Tool Registry
++
+Permission
++
+Approval
+
+sesuai architecture existing.
+
+==================================================
+13. MEMORY DECLARATION
+==================================================
+
+Profile dapat mendeklarasikan kebutuhan memory.
+
+Contoh:
+
+memory:
+  enabled: true
+  scopes:
+    - project
+    - task
+
+Tetapi MemoryManager existing tetap menjadi authority.
+
+Jangan membuat memory database baru.
+
+==================================================
+14. LEARNING DECLARATION
+==================================================
+
+Profile dapat mendeklarasikan learning metadata.
+
+Contoh:
+
+learning:
+  enabled: true
+
+Tetapi external learning source tetap:
+
+DATA ONLY
+
+Jangan otomatis menjadi instruction.
+
+Khusus:
+
+ai/learning/sources/temporary/muse-spark-1.3.md
+
+tetap hanya learning reference.
+
+Jangan hubungkan file tersebut secara otomatis ke Muse Agent.
+
+==================================================
+15. EXAMPLE PROFILES
+==================================================
+
+Buat hanya CONTRACT EXAMPLES.
+
+Misalnya:
+
+ai/agents/examples/profile-template/
+
+atau lokasi yang paling sesuai dengan architecture existing.
+
+Jangan membuat operational:
+
+muse/agent.md
+deepseek/agent.md
+glm/agent.md
+
+karena nanti user akan menentukan konfigurasi masing-masing.
+
+Gunakan:
+
+agent-template.md
+
+dengan placeholder.
+
+==================================================
+16. API
+==================================================
+
+Jika API architecture existing mendukungnya, tambahkan read-only endpoint:
+
+GET /api/v1/ai/:id/profile
+
+atau gunakan endpoint existing yang paling sesuai.
+
+Jangan membuat duplicate endpoint.
+
+Endpoint tidak boleh membocorkan:
+
+- secrets
+- API keys
+- credentials
+- internal sensitive prompts
+- private memory
+- private project information
+
+==================================================
+17. SECURITY
+==================================================
+
+Tambahkan tests untuk:
+
+- path traversal
+- arbitrary file loading
+- malformed frontmatter
+- unknown fields
+- oversized profile
+- prompt injection inside agent.md
+- tool escalation
+- permission escalation
+- disabled agent routing
+- secret exposure
+- context overflow
+- cross-project profile access
+- invalid model reference
+- symlink escape
+- executable markdown content
+
+External markdown tidak boleh menjadi authority.
+
+==================================================
+18. TESTS
+==================================================
+
+Tambahkan tests:
+
+Profile Loader:
+- valid profile
+- malformed profile
+- missing fields
+- invalid fields
+
+Registry:
+- registration
+- lookup
+- disable
+- enable
+
+Routing:
+- capability
+- skill
+- tool
+- deterministic selection
+
+Context:
+- required context
+- optional context
+- excluded context
+- bounded context
+
+Security:
+- traversal
+- injection
+- escalation
+- secret leakage
+
+Regression:
+seluruh test existing harus tetap pass.
+
+==================================================
+19. MUSE SPARK INTEGRITY
+==================================================
+
+Sebelum selesai:
+
+SHA-256:
+
+ai/learning/sources/temporary/muse-spark-1.3.md
+
+harus tetap:
+
+4c1030c406c5b315cf95cf493c781658d2bb58103821fb6d47181c78e9186d13
+
+Jika berubah:
+
+STOP dan laporkan.
+
+Jangan memperbaiki otomatis.
+
+==================================================
+20. FRONTEND
+==================================================
+
+Frontend harus tetap UNCHANGED.
+
+Jangan menambahkan UI.
+
+==================================================
+21. QUALITY GATE
+==================================================
+
+Run:
+
+- all tests
+- typecheck
+- lint
+- format check
+- security tests
+- secret scan
+
+Kemudian:
+
+git diff
+git status
+
+Pastikan tidak ada perubahan tidak terkait.
+
+==================================================
+22. GIT
+==================================================
+
+Buat satu commit lokal:
+
+feat: add ai agent profile system
+
+JANGAN PUSH.
+
+==================================================
+23. FINAL REPORT
+==================================================
+
+Tampilkan:
+
+AGENT PROFILE:
+PASS/FAIL
+
+PROFILE LOADER:
+PASS/FAIL
+
+PROFILE VALIDATION:
+PASS/FAIL
+
+REGISTRY:
+PASS/FAIL
+
+CAPABILITY ROUTING:
+PASS/FAIL
+
+CONTEXT BUILDER:
+PASS/FAIL
+
+MODEL ROUTER:
+PASS/FAIL
+
+TOOLS:
+PASS/FAIL
+
+PERMISSIONS:
+PASS/FAIL
+
+MEMORY:
+PASS/FAIL
+
+LEARNING:
+PASS/FAIL
+
+SECURITY:
+PASS/FAIL
+
+MUSE SPARK:
+UNCHANGED / FAIL
+
+MUSE SPARK SHA256:
+...
+
+FRONTEND:
+UNCHANGED
+
+TESTS:
+passed / skipped / failed
+
+TYPECHECK:
+PASS/FAIL
+
+LINT:
+PASS/FAIL
+
+FORMAT:
+PASS/FAIL
+
+SECRET SCAN:
+PASS/FAIL
+
+COMMIT:
+...
+
+WORKING TREE:
+...
+
+PUSH:
+NO
+
+SETELAH SELESAI BERHENTI.
+
+JANGAN membuat Muse/DeepSeek/GLM menjadi AI operasional pada Phase 22.
 ```
 
 # 
