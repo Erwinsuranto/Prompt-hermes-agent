@@ -46,6 +46,512 @@
 ```
 # 
 ```
+HERMES AGENT — FINAL AUDIT → BUILD → DEPLOYMENT PREPARATION
+============================================================
+
+Tujuan utama:
+Bawa project Hermes Agent dari kondisi development saat ini sampai SIAP DEPLOYMENT.
+
+Facebook/content publishing JANGAN dikerjakan pada fase ini.
+Facebook ditunda karena ContentPilot (contentpilot.biz.id) belum selesai.
+Jangan membuat downloader Facebook baru dan jangan membuat integrasi Facebook baru.
+
+PRINSIP:
+- Audit dulu.
+- Jangan mengubah arsitektur yang sudah stabil tanpa alasan.
+- Jangan menambah fitur baru yang tidak diperlukan untuk deployment.
+- Jika menemukan bug/blocker, perbaiki.
+- Jika fitur sudah benar, jangan rewrite.
+- Jangan membuat mock seolah-olah fitur live.
+- Jangan membuat automatic model binding/fallback.
+- Model tetap dipilih manual oleh user.
+
+
+============================================================
+PHASE A — FINAL ROADMAP AUDIT
+============================================================
+
+Audit seluruh repository Hermes Agent.
+
+Bandingkan implementasi aktual dengan roadmap Phase 0 sampai Phase 26 yang sudah dikerjakan.
+
+Periksa apakah setiap fase benar-benar:
+1. implemented
+2. terhubung
+3. tidak hanya placeholder
+4. tidak hanya mock
+5. tidak memiliki TODO/FIXME kritis
+6. tidak memiliki dead code kritis
+7. tidak memiliki dependency yang hilang
+8. tidak memiliki konfigurasi runtime yang belum jelas
+
+Khusus periksa:
+
+- Foundation
+- Agent Core
+- Model Router
+- Module System
+- Tool Registry
+- Workspace Sandbox
+- Permission/Approval
+- Coding Agent
+- Memory
+- Autonomous Agent
+- Task Queue
+- Worker
+- Scheduler
+- Telegram
+- GitHub
+- Google
+- Workflow Engine
+- AI Model Ecosystem
+- App Modding/Learning
+- Software Factory
+- Autonomous Software Engineering Loop
+- Continuous Learning
+- Browser Automation
+- ContentPilot Adapter
+- Video Intelligence
+- Video Discovery/Pipeline
+- Content Queue/Operations
+- AI Registry
+- Multi-AI Agent Structure
+- Agent Profile System
+- Muse
+- DeepSeek
+- GLM
+- Runtime Smoke Test
+
+Facebook/content publishing:
+STATUS = DEFERRED
+Jangan dianggap deployment blocker.
+
+
+============================================================
+PHASE B — RUNTIME ARCHITECTURE AUDIT
+============================================================
+
+Pastikan jalur utama Hermes benar:
+
+Request
+ ↓
+Agent
+ ↓
+Agent Profile
+ ↓
+Context
+ ↓
+Model Router
+ ↓
+Explicit Model
+ ↓
+Provider
+ ↓
+Response
+
+Pastikan:
+
+- Agent tidak memilih model otomatis.
+- Model dipilih manual.
+- Tidak ada automatic fallback.
+- Tidak ada automatic model switching.
+- Provider dipilih berdasarkan model yang diberikan melalui existing architecture.
+- Permission tetap menjadi authority.
+- Tool Registry tetap menjadi authority untuk tools.
+- Memory tetap melalui MemoryManager.
+- Workspace sandbox tetap enforced.
+- Model response tidak otomatis dieksekusi sebagai command.
+
+
+============================================================
+PHASE C — CONFIGURATION AUDIT
+============================================================
+
+Audit seluruh environment/configuration.
+
+Cari semua environment variables yang benar-benar diperlukan.
+
+Buat atau update:
+
+.env.example
+
+Tetapi:
+
+- JANGAN masukkan secret asli.
+- JANGAN commit API key.
+- JANGAN commit token.
+- JANGAN commit password.
+- JANGAN commit private key.
+
+Kelompokkan configuration menjadi:
+
+REQUIRED
+OPTIONAL
+DEVELOPMENT
+INTEGRATION
+
+Pastikan production dapat mengetahui configuration yang wajib tanpa membaca source code secara manual.
+
+
+============================================================
+PHASE D — DATABASE / STORAGE AUDIT
+============================================================
+
+Audit seluruh persistence layer:
+
+- database
+- migrations
+- schema
+- indexes
+- filesystem storage
+- cache
+- queues
+- memory storage
+- task storage
+
+Pastikan deployment baru dapat melakukan initialization secara deterministic.
+
+Jika migration system sudah tersedia:
+gunakan migration system tersebut.
+
+JANGAN membuat database baru jika existing database layer sudah benar.
+
+
+============================================================
+PHASE E — BUILD AUDIT
+============================================================
+
+Pastikan project dapat dibuild dari clean environment.
+
+Gunakan package manager dan command yang memang digunakan repository.
+
+Jalankan:
+
+- install dependency clean
+- typecheck
+- lint
+- format check
+- test
+- build
+
+Jangan mengubah lockfile tanpa alasan.
+
+
+============================================================
+PHASE F — SECURITY AUDIT
+============================================================
+
+Periksa:
+
+- secret leakage
+- .env exposure
+- API key logging
+- Authorization header logging
+- path traversal
+- arbitrary file access
+- symlink escape
+- command injection
+- unsafe shell execution
+- SSRF
+- unsafe URL handling
+- prompt injection boundary
+- tool escalation
+- permission escalation
+- cross-project access
+- unsafe model output execution
+- insecure default configuration
+- debug endpoint exposure
+- stack trace leakage
+- production error leakage
+
+Pastikan:
+
+- production tidak mencetak secret.
+- production tidak menampilkan credential.
+- error response aman.
+- log aman.
+
+
+============================================================
+PHASE G — API / SERVICE HEALTH
+============================================================
+
+Identifikasi entrypoint utama Hermes.
+
+Pastikan tersedia health check yang sesuai architecture.
+
+Jika sudah ada:
+gunakan existing health endpoint.
+
+Jika belum ada dan memang diperlukan untuk deployment:
+tambahkan health endpoint minimal.
+
+Health check harus:
+
+- cepat
+- tidak memerlukan AI inference
+- tidak membocorkan secret
+- dapat digunakan deployment platform/load balancer
+
+Jika repository sudah memiliki endpoint seperti /health atau /healthz:
+jangan membuat endpoint duplikat.
+
+
+============================================================
+PHASE H — RUNTIME SMOKE TEST
+============================================================
+
+Pastikan Phase 26 smoke test tersedia.
+
+Smoke test live TIDAK boleh berjalan otomatis pada:
+
+- build
+- CI
+- deployment
+- normal test suite
+
+Live inference hanya dijalankan jika user secara eksplisit meminta.
+
+Pastikan smoke test menerima:
+
+--agent
+--model
+--prompt
+
+atau pola ekuivalen yang memang sesuai CLI project.
+
+Model harus selalu eksplisit.
+
+Tidak boleh:
+
+agent → automatic model selection
+
+Tidak boleh:
+
+model failure → automatic fallback
+
+
+============================================================
+PHASE I — DEPLOYMENT CONFIGURATION
+============================================================
+
+Audit cara deployment yang paling sesuai dengan repository.
+
+Tentukan:
+
+- runtime
+- Node/Python/other version
+- package manager
+- start command
+- build command
+- migration command
+- port
+- host binding
+- environment variables
+- persistent storage requirement
+- worker requirement
+- scheduler requirement
+- queue requirement
+
+Jika Hermes membutuhkan worker/scheduler terpisah:
+dokumentasikan dengan jelas.
+
+Jika bisa dijalankan single service:
+jelaskan.
+
+JANGAN mengubah architecture hanya untuk memaksa single service.
+
+
+============================================================
+PHASE J — DOCKER / PRODUCTION
+============================================================
+
+Periksa apakah repository sudah memiliki:
+
+- Dockerfile
+- docker-compose
+- production configuration
+
+Jika belum ada dan deployment akan menggunakan Docker:
+buat Dockerfile production yang minimal dan aman.
+
+Gunakan:
+
+- non-root user jika memungkinkan
+- production dependency install
+- deterministic build
+- minimal runtime image sesuai stack
+- healthcheck jika sesuai
+- no secrets baked into image
+
+Jangan memasukkan .env production ke image.
+
+
+============================================================
+PHASE K — DEPLOYMENT DOCUMENTATION
+============================================================
+
+Buat/update:
+
+docs/deployment.md
+
+Isi:
+
+1. Requirements
+2. Environment variables
+3. Database setup
+4. Build
+5. Start
+6. Health check
+7. Worker
+8. Scheduler
+9. Production configuration
+10. Logs
+11. Troubleshooting
+12. Rollback
+13. Security notes
+14. Live AI smoke test setelah deployment
+
+
+============================================================
+PHASE L — DEPLOYMENT READINESS
+============================================================
+
+Buat checklist:
+
+DEPLOYMENT READY
+
+[ ] repository clean
+[ ] dependencies install
+[ ] typecheck
+[ ] lint
+[ ] format
+[ ] tests
+[ ] security
+[ ] secret scan
+[ ] build
+[ ] health check
+[ ] database initialization
+[ ] production config
+[ ] worker configuration
+[ ] scheduler configuration
+[ ] documentation
+[ ] no secrets committed
+
+
+============================================================
+PHASE M — DO NOT DEPLOY YET
+============================================================
+
+PENTING:
+
+Pada fase ini JANGAN melakukan:
+
+- git push
+- deployment ke VPS
+- perubahan DNS
+- restart production service
+- destructive database migration
+
+Kita baru sampai deployment-ready.
+
+Setelah semua audit dan build selesai, berhenti dan tampilkan laporan.
+
+
+============================================================
+MUSE SPARK INTEGRITY
+============================================================
+
+Jangan ubah:
+
+ai/learning/sources/temporary/muse-spark-1.3.md
+
+SHA-256 wajib tetap:
+
+4c1030c406c5b315cf95cf493c781658d2bb58103821fb6d47181c78e9186d13
+
+Jika berubah, STOP dan laporkan.
+
+
+============================================================
+GIT
+============================================================
+
+Jangan push.
+
+Jika ada perubahan kode/dokumentasi yang diperlukan:
+
+git status
+git diff --stat
+git diff --check
+
+Buat commit hanya jika semua quality gates lulus:
+
+chore: prepare Hermes Agent for deployment
+
+Jangan push.
+
+
+============================================================
+FINAL REPORT
+============================================================
+
+Tampilkan:
+
+HERMES DEPLOYMENT READINESS REPORT
+
+Roadmap:
+- completed:
+- deferred:
+- blockers:
+
+Runtime:
+- Agent:
+- Model Router:
+- Model selection:
+- Provider:
+- Tools:
+- Memory:
+- Permissions:
+
+Build:
+- install:
+- typecheck:
+- lint:
+- format:
+- tests:
+- security:
+- secret scan:
+- build:
+
+Production:
+- runtime:
+- start command:
+- port:
+- database:
+- worker:
+- scheduler:
+- health endpoint:
+
+Docker:
+- ready/not needed
+
+Muse Spark SHA:
+- expected:
+- actual:
+- status:
+
+Git:
+- commit:
+- working tree:
+
+IMPORTANT:
+Jangan mengatakan DEPLOYMENT READY jika masih ada blocker.
+Jika semua bersih, tulis:
+
+DEPLOYMENT READY — WAITING FOR DEPLOYMENT TARGET
+
+Lalu berhenti.
 
 ```
 # 
