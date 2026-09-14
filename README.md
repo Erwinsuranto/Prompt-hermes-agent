@@ -34,7 +34,41 @@
 ```
 # 
 ```
+HERMES — PUSH DEPLOYMENT COMMIT
 
+Lakukan hanya:
+
+1. Pastikan git status.
+2. Pastikan tidak ada secret/API key/.env yang akan ter-commit.
+3. Pastikan commit deployment terakhir sudah ada.
+4. Push commit tersebut ke remote origin branch main.
+
+Gunakan:
+
+git status
+git log -1 --oneline
+git push origin main
+
+JANGAN:
+- mengubah kode
+- mengubah konfigurasi VPS
+- restart Hermes
+- mematikan service
+- mengubah DNS
+- menjalankan migration
+- menjalankan live AI
+- commit secret
+
+Setelah push selesai tampilkan:
+
+PUSH RESULT
+- branch:
+- commit:
+- remote:
+- push:
+- Hermes service status:
+
+Pastikan Hermes tetap online setelah push.
 ```
 # 
 ```
