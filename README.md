@@ -30,7 +30,202 @@
 ```
 # 
 ```
+HERMES — POST-DEPLOYMENT API DISCOVERY & HEALTH TEST
+=====================================================
 
+Hermes sudah berhasil:
+
+- systemd service active/running
+- /health = HTTP 200
+- /ready = database OK
+- repository clean
+- deployment commit sudah di-push
+
+Sekarang lakukan AUDIT READ-ONLY terhadap API Hermes yang sedang ONLINE.
+
+JANGAN:
+- mengubah kode
+- mengubah database
+- restart service
+- mengubah DNS
+- mengubah Caddy
+- mengubah firewall
+- menjalankan live AI inference
+- mengirim request yang menyebabkan side effect
+- membuat data baru
+
+
+1. IDENTIFIKASI API
+-------------------
+
+Periksa route API yang benar-benar tersedia dari source code dan server.
+
+Tampilkan:
+
+- base URL
+- health endpoint
+- readiness endpoint
+- API version
+- semua endpoint utama yang relevan
+
+Kelompokkan:
+
+READ-ONLY
+MUTATION
+AI/INFERENCE
+ADMIN
+
+Jangan menampilkan secret.
+
+
+2. TEST HEALTH
+--------------
+
+Jalankan request read-only ke:
+
+/health
+/ready
+
+atau endpoint yang memang ditemukan.
+
+Tampilkan:
+
+HTTP status
+response ringkas
+latency
+
+Pastikan tidak ada secret pada response.
+
+
+3. TEST API DISCOVERY
+---------------------
+
+Identifikasi endpoint yang bisa digunakan untuk:
+
+- melihat agent
+- melihat agent profile
+- melihat model
+- melihat provider
+- melihat system status
+
+Jika endpoint tersebut tersedia dan READ-ONLY, lakukan test.
+
+Jangan membuat data.
+
+
+4. AGENT REGISTRY
+-----------------
+
+Jika endpoint registry tersedia:
+
+test read-only untuk:
+
+Muse
+DeepSeek
+GLM
+
+Tampilkan apakah masing-masing:
+
+- registered
+- enabled
+- profile valid
+
+Jangan melakukan inference.
+
+
+5. MODEL REGISTRY
+-----------------
+
+Jika endpoint read-only tersedia:
+
+tampilkan model yang terdaftar.
+
+Jangan mengubah model.
+Jangan memilih model otomatis.
+
+
+6. RUNTIME STATUS
+-----------------
+
+Periksa:
+
+- Hermes process
+- memory usage
+- CPU usage
+- port 3001
+- database connection
+- worker jika ada
+- scheduler jika ada
+
+Jangan restart apa pun.
+
+
+7. EXTERNAL ACCESS
+------------------
+
+Periksa apakah port 3001:
+
+- hanya listen localhost
+- atau public
+
+Jangan membuka firewall.
+
+Jika hanya localhost:
+jelaskan bahwa external API belum tersedia karena domain/reverse proxy belum dikonfigurasi.
+
+
+8. FINAL REPORT
+---------------
+
+HERMES POST-DEPLOYMENT TEST
+
+Service:
+- status:
+- PID:
+- port:
+- bind:
+
+Health:
+- /health:
+- /ready:
+
+API:
+- base:
+- version:
+- read-only endpoints:
+
+Agents:
+- Muse:
+- DeepSeek:
+- GLM:
+
+Models:
+- registry status:
+
+Database:
+- status:
+
+Worker:
+- status:
+
+Scheduler:
+- status:
+
+External access:
+- status:
+
+Live AI:
+- NOT RUN
+
+Facebook:
+- DEFERRED
+
+FINAL STATUS:
+
+Jika service sehat:
+HERMES SERVICE VERIFIED
+
+Jangan mengubah apa pun pada tahap ini.
 ```
 # 
 ```
