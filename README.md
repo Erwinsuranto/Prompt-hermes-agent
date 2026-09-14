@@ -22,6 +22,146 @@
 ```
 # 
 ```
+HERMES — ENABLE EXISTING PROVIDER FOR LIVE INFERENCE
+=====================================================
+
+Hermes sudah ONLINE dan service sehat.
+
+Pre-live check menunjukkan:
+
+NO MODEL READY FOR LIVE INFERENCE
+
+Provider menjadi unavailable karena credential belum terkonfigurasi.
+
+Sekarang audit dan siapkan provider EXISTING untuk live inference.
+
+TARGET PERTAMA:
+GLM
+
+PENTING:
+- Jangan membuat provider baru.
+- Jangan membuat model baru.
+- Jangan mengubah Agent Profile Muse/DeepSeek/GLM.
+- Jangan membuat automatic model binding.
+- Jangan membuat fallback.
+- Jangan memilih model otomatis.
+- Jangan menampilkan secret.
+- Jangan menampilkan API key.
+- Jangan menampilkan token.
+- Jangan commit .env.
+- Jangan push dulu.
+
+
+STEP 1 — AUDIT EXISTING GLM PROVIDER
+------------------------------------
+
+Identifikasi provider GLM yang sudah ada di Hermes.
+
+Tampilkan hanya:
+
+- provider ID
+- provider name
+- configured: YES/NO
+- enabled: YES/NO
+- model yang tersedia
+- environment variable NAME yang diperlukan
+
+JANGAN tampilkan VALUE credential.
+
+
+STEP 2 — CHECK ENVIRONMENT
+--------------------------
+
+Periksa apakah environment variable credential GLM yang diperlukan sudah tersedia.
+
+Hanya tampilkan:
+
+VARIABLE_NAME = SET / NOT SET
+
+Jangan pernah mencetak nilai variable.
+
+
+STEP 3 — JIKA CREDENTIAL BELUM ADA
+----------------------------------
+
+Jika credential belum tersedia:
+
+JANGAN membuat fake credential.
+JANGAN membuat placeholder aktif.
+JANGAN menjalankan live inference.
+
+Tampilkan instruksi singkat kepada user tentang environment variable yang perlu diisi.
+
+Contoh:
+
+GLM credential:
+GLM5_3_API_KEY = NOT SET
+
+Required action:
+user perlu memasukkan credential valid ke production environment.
+
+Setelah credential dimasukkan, service perlu direstart agar environment baru terbaca.
+
+
+STEP 4 — JIKA CREDENTIAL SUDAH ADA
+----------------------------------
+
+Jika credential sudah tersedia:
+
+1. Pastikan provider existing dapat membaca credential.
+2. Pastikan provider status menjadi AVAILABLE.
+3. Jangan memilih model otomatis.
+4. Tampilkan daftar model GLM yang tersedia untuk dipilih user.
+5. Jangan menjalankan inference dulu.
+
+
+STEP 5 — SERVICE
+----------------
+
+Jika environment sudah berubah dan memang perlu restart:
+
+JANGAN restart otomatis tanpa alasan.
+
+Jika restart diperlukan setelah user memasukkan credential, tampilkan command restart yang benar.
+
+Jangan mengubah service lain.
+
+
+FINAL REPORT
+------------
+
+GLM PROVIDER CHECK
+
+Provider:
+- ID:
+- status:
+- enabled:
+
+Credential:
+- variable:
+- status:
+
+Available models:
+- ...
+
+Live inference:
+NOT RUN
+
+Model selection:
+MANUAL ONLY
+
+Automatic fallback:
+DISABLED
+
+Hermes service:
+ONLINE / BLOCKED
+
+Jika credential belum tersedia:
+WAITING FOR GLM CREDENTIAL
+
+Tidak ada perubahan kode.
+Tidak ada secret yang ditampilkan.
+Tidak ada push.
 
 ```
 # 
