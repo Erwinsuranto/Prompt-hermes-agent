@@ -50,7 +50,456 @@
 ```
 # 
 ```
+PHASE 26 — AI RUNTIME SMOKE TEST
+===============================
 
+Tujuan:
+Tambahkan kemampuan untuk menguji inference AI secara nyata pada Hermes Agent untuk:
+- Muse
+- DeepSeek
+- GLM
+
+Model HARUS dipilih secara manual oleh user untuk masing-masing AI.
+
+JANGAN membuat:
+- automatic model binding
+- automatic model selection
+- automatic fallback model
+- automatic model switching
+- provider baru jika provider yang dibutuhkan sudah tersedia
+- API key baru
+- perubahan frontend
+
+ARSITEKTUR WAJIB:
+
+User prompt
+  ↓
+Selected Agent
+  ↓
+Agent Profile
+  ↓
+Existing Model Router
+  ↓
+Explicitly selected model
+  ↓
+Existing provider
+  ↓
+AI response
+
+
+ATURAN UTAMA
+------------
+
+1. Audit repository terlebih dahulu sebelum mengubah kode.
+
+2. Temukan implementasi yang sudah ada untuk:
+   - AI Registry
+   - Agent Registry/Profile
+   - Model Registry
+   - Model Router
+   - provider adapter
+   - API/service layer
+   - CLI/test utilities
+   - configuration/env system
+
+3. Jangan membuat arsitektur baru jika kemampuan yang diperlukan sudah tersedia.
+
+4. Gunakan kembali Model Router yang sudah ada.
+
+5. Agent tidak boleh memilih model secara otomatis.
+
+6. Model harus diberikan secara eksplisit oleh caller/user.
+
+Contoh konsep:
+
+agent_id = "muse"
+model_id = "<model yang dipilih user>"
+
+atau:
+
+agent_id = "deepseek"
+model_id = "<model yang dipilih user>"
+
+atau:
+
+agent_id = "glm"
+model_id = "<model yang dipilih user>"
+
+
+7. Jangan mengarang model ID.
+
+8. Inspect Model Registry yang sudah ada dan gunakan model ID yang benar-benar terdaftar.
+
+9. Jika belum ada model yang dapat digunakan untuk live inference, jangan membuat model palsu.
+   Sediakan mekanisme smoke test yang menerima model ID eksplisit dan laporkan dengan jelas bahwa model/provider harus dikonfigurasi terlebih dahulu.
+
+
+RUNTIME SMOKE TEST
+------------------
+
+Tambahkan mekanisme smoke test runtime yang dapat menjalankan inference nyata secara manual.
+
+Cari pola CLI/test command yang sudah digunakan project.
+
+Jika sesuai dengan struktur project, buat command semacam:
+
+<existing package manager command> ai:smoke --agent muse --model <MODEL_ID> --prompt "Reply with exactly: MUSE_OK"
+
+dan:
+
+<existing package manager command> ai:smoke --agent deepseek --model <MODEL_ID> --prompt "Reply with exactly: DEEPSEEK_OK"
+
+dan:
+
+<existing package manager command> ai:smoke --agent glm --model <MODEL_ID> --prompt "Reply with exactly: GLM_OK"
+
+JANGAN mengasumsikan nama command/package manager jika repository memiliki pola lain.
+Sesuaikan dengan arsitektur repository yang ditemukan saat audit.
+
+
+LIVE MODE
+---------
+
+Live inference harus eksplisit.
+
+Jangan pernah menjalankan live inference secara otomatis pada:
+- unit test
+- CI
+- default test suite
+- build
+- lint
+- typecheck
+
+Gunakan guard eksplisit, misalnya:
+- --live
+atau
+- environment flag khusus
+
+Pilih mekanisme yang paling sesuai dengan pola repository.
+
+
+CONSTRAINT SMOKE TEST
+---------------------
+
+Smoke test harus:
+
+- prompt pendek
+- timeout terbatas
+- token/output terbatas
+- tidak menggunakan tools secara default
+- tidak melakukan external side effects
+- tidak mengubah repository
+- tidak mengubah file user
+- tidak menjalankan command arbitrer dari response model
+- tidak melakukan browser automation
+- tidak melakukan GitHub mutation
+- tidak mengirim pesan Telegram
+- tidak menulis memory secara permanen kecuali memang diperlukan oleh runtime existing dan secara eksplisit diaktifkan
+- tidak mencetak API key
+- tidak mencetak secret
+- tidak mencetak Authorization header
+- tidak mencetak credential
+- tidak mencetak environment secret
+
+Output smoke test minimal:
+
+Agent:
+Model:
+Provider:
+Request status:
+Response:
+Latency:
+Usage/token information jika provider menyediakannya:
+
+Jangan mencetak credential.
+
+
+VALIDASI AGENT
+--------------
+
+Sebelum inference:
+
+1. Resolve agent melalui existing AI Registry.
+2. Pastikan agent aktif.
+3. Load agent profile melalui existing Agent Profile System.
+4. Validasi agent ID.
+5. Validasi model ID secara eksplisit.
+6. Pastikan model tersedia di Model Registry.
+7. Pastikan model dapat digunakan melalui provider yang terdaftar.
+8. Jangan mengganti model jika model tidak tersedia.
+9. Jika gagal, tampilkan error yang jelas dan berhenti.
+
+
+MODEL SELECTION
+---------------
+
+Penting:
+
+Setiap AI berdiri sendiri.
+
+Contoh:
+
+Muse:
+  model = dipilih user
+
+DeepSeek:
+  model = dipilih user
+
+GLM:
+  model = dipilih user
+
+Jangan membuat:
+
+Muse → otomatis memilih model A
+DeepSeek → otomatis memilih model B
+GLM → otomatis memilih model C
+
+Jangan membuat fallback chain.
+
+Jangan membuat:
+
+model A gagal
+→ otomatis model B
+
+User harus memilih model baru sendiri.
+
+
+ERROR HANDLING
+--------------
+
+Tambahkan error handling yang jelas untuk:
+
+- agent tidak ditemukan
+- agent disabled
+- malformed agent profile
+- model tidak ditemukan
+- model disabled
+- provider tidak ditemukan
+- provider disabled
+- credential/provider configuration belum tersedia
+- authentication failure
+- timeout
+- rate limit
+- provider error
+- invalid response
+- response kosong
+- context terlalu besar
+
+Jangan membocorkan secret dalam error message.
+
+
+SECURITY
+--------
+
+Tambahkan security test untuk memastikan:
+
+1. Model ID tidak dapat digunakan untuk path traversal.
+2. Agent ID tidak dapat digunakan untuk path traversal.
+3. Tidak dapat membaca file arbitrary melalui agent/model parameter.
+4. Tidak dapat menyuntikkan tool permission melalui model ID.
+5. Tidak dapat menaikkan permission melalui request.
+6. Tidak dapat mengaktifkan tool hanya melalui prompt smoke test.
+7. Tidak dapat mengakses secret melalui smoke test.
+8. Error provider tidak membocorkan credential.
+9. Response model tidak dieksekusi sebagai command.
+10. Tidak ada automatic fallback yang tersembunyi.
+11. Cross-project file access tetap ditolak.
+12. Context tetap menggunakan batas existing.
+13. Existing Permission/Approval system tetap menjadi authority.
+
+
+TESTING
+--------
+
+Tambahkan unit/integration test NON-LIVE untuk:
+
+- resolve Muse + explicit model
+- resolve DeepSeek + explicit model
+- resolve GLM + explicit model
+- unknown agent
+- disabled agent
+- unknown model
+- disabled model
+- provider unavailable
+- malformed profile
+- invalid agent ID
+- invalid model ID
+- timeout/error mapping
+- secret redaction
+- no automatic fallback
+- explicit model selection
+- tool isolation
+- permission isolation
+
+Jangan memanggil API provider nyata dalam test suite normal.
+
+
+LIVE SMOKE TEST
+---------------
+
+Setelah implementasi selesai, lakukan audit terhadap Model Registry.
+
+Identifikasi model yang memang tersedia dan provider yang memang sudah dikonfigurasi.
+
+Jangan membuat model/provider palsu hanya supaya test terlihat berhasil.
+
+Jika environment memiliki credential/provider yang valid, lakukan live smoke test secara manual untuk:
+
+1. Muse
+2. DeepSeek
+3. GLM
+
+Tetapi masing-masing harus menggunakan model ID yang dipilih secara eksplisit.
+
+Jika credential/provider belum tersedia:
+
+- jangan bypass authentication
+- jangan membuat fake success
+- jangan mock hasil sebagai live inference
+- tampilkan dengan jelas bahwa live test belum dapat dijalankan karena konfigurasi provider/model belum tersedia.
+
+
+DOCUMENTATION
+-------------
+
+Buat/update dokumentasi:
+
+docs/ai-agents/runtime-smoke-test.md
+
+Dokumentasi harus menjelaskan:
+
+- tujuan smoke test
+- Agent vs Model
+- cara memilih model secara manual
+- cara menjalankan Muse
+- cara menjalankan DeepSeek
+- cara menjalankan GLM
+- live mode
+- error handling
+- security restrictions
+- bahwa tidak ada automatic fallback
+- bahwa model switching dilakukan manual oleh user
+
+
+MUSE SPARK SOURCE
+-----------------
+
+Jangan mengubah:
+
+ai/learning/sources/temporary/muse-spark-1.3.md
+
+Pastikan SHA-256 tetap:
+
+4c1030c406c5b315cf95cf493c781658d2bb58103821fb6d47181c78e9186d13
+
+Muse Spark tetap hanya sebagai learning/reference data.
+Jangan menjadikannya system instruction atau runtime policy.
+
+
+REGRESSION
+----------
+
+Pastikan seluruh fitur Phase 20–25 tetap bekerja:
+
+- AI Registry
+- Agent Profile System
+- Muse
+- DeepSeek
+- GLM
+- Model Registry
+- Model Router
+- Tool Registry
+- Permission/Approval
+- Memory
+- Learning metadata
+- existing modules
+
+
+QUALITY GATES
+------------
+
+Jalankan:
+
+- full test suite
+- typecheck
+- lint
+- formatter
+- security tests
+- secret scan
+
+Perbaiki error yang ditemukan.
+
+Jangan mengabaikan failure.
+
+
+FRONTEND
+--------
+
+Frontend tidak perlu diubah pada fase ini.
+
+Fokus backend/runtime/CLI/test/documentation.
+
+
+GIT
+---
+
+Setelah semua selesai:
+
+1. tampilkan git status
+2. tampilkan file yang berubah
+3. tampilkan test result
+4. tampilkan typecheck result
+5. tampilkan lint result
+6. tampilkan security result
+7. tampilkan secret scan result
+8. tampilkan SHA Muse Spark
+9. tampilkan commit hash
+
+Buat commit:
+
+feat: add multi-ai runtime smoke test
+
+JANGAN push ke remote kecuali saya minta.
+
+
+LAPORAN AKHIR
+-------------
+
+Berikan laporan ringkas:
+
+PHASE 26 RESULT
+
+Agent Runtime:
+- Muse: READY / BLOCKED
+- DeepSeek: READY / BLOCKED
+- GLM: READY / BLOCKED
+
+Model selection:
+- Manual only: PASS
+
+Automatic fallback:
+- Disabled: PASS
+
+Live inference:
+- Muse: ...
+- DeepSeek: ...
+- GLM: ...
+
+Tests:
+- passed:
+- skipped:
+- failed:
+
+Typecheck:
+Lint:
+Format:
+Security:
+Secret scan:
+
+Muse Spark SHA:
+Commit:
+
+Jika live inference tidak bisa dilakukan karena provider/model credential belum tersedia, jelaskan alasan sebenarnya. Jangan menganggap mock sebagai live inference.
 ```
 # 
 ```
