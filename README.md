@@ -26,7 +26,143 @@
 ```
 # 
 ```
+HERMES — PRE-LIVE AI TEST: MODEL & PROVIDER DISCOVERY
+======================================================
 
+Hermes Service sudah VERIFIED dan ONLINE.
+
+Sekarang lakukan pemeriksaan READ-ONLY sebelum live inference.
+
+JANGAN:
+- mengubah kode
+- mengubah database
+- restart service
+- mengubah environment
+- mengubah provider
+- membuat provider baru
+- membuat model baru
+- mengubah agent
+- melakukan live inference
+
+
+1. MODEL REGISTRY
+-----------------
+
+Tampilkan semua model yang saat ini terdaftar di Hermes Model Registry.
+
+Untuk setiap model tampilkan:
+
+- model_id
+- model name
+- provider
+- status enabled/disabled
+- capability
+- apakah siap digunakan untuk inference
+
+
+2. PROVIDER
+-----------
+
+Tampilkan provider yang memang sudah terdaftar.
+
+Untuk setiap provider:
+
+- provider ID/name
+- status
+- configured / not configured
+- model count
+
+JANGAN tampilkan:
+- API key
+- token
+- password
+- Authorization header
+- secret value
+
+
+3. AGENT
+--------
+
+Pastikan:
+
+Muse
+DeepSeek
+GLM
+
+terdaftar dan profile-nya valid.
+
+Tampilkan:
+
+agent:
+status:
+profile:
+
+
+4. RUNTIME ROUTING
+------------------
+
+Pastikan architecture runtime:
+
+agent
+→ profile
+→ explicit model
+→ Model Router
+→ provider
+
+dan pastikan:
+
+- no automatic model selection
+- no automatic fallback
+- no automatic model switching
+
+
+5. PILIH MODEL MUSE
+-------------------
+
+Jangan memilih model otomatis.
+
+Berikan daftar model yang valid untuk Muse sehingga USER dapat memilih sendiri.
+
+Jika tidak ada model yang siap:
+
+tulis:
+
+NO MODEL READY FOR LIVE INFERENCE
+
+dan berhenti.
+
+
+FINAL REPORT
+------------
+
+HERMES PRE-LIVE CHECK
+
+Muse:
+- registered:
+- profile:
+- available models:
+
+DeepSeek:
+- registered:
+- profile:
+
+GLM:
+- registered:
+- profile:
+
+Providers:
+- ...
+
+Model selection:
+MANUAL ONLY
+
+Automatic fallback:
+DISABLED
+
+Live inference:
+NOT RUN
+
+Tidak boleh ada perubahan pada server/repository.
 ```
 # 
 ```
