@@ -42,7 +42,164 @@
 ```
 # 
 ```
+HERMES AGENT — PRODUCTION DEPLOYMENT DISCOVERY
+==============================================
 
+Kita akan melakukan deployment Hermes Agent ke VPS ini.
+
+PENTING:
+- Jangan install apa pun dulu.
+- Jangan mengubah konfigurasi server.
+- Jangan restart service.
+- Jangan mengubah DNS.
+- Jangan mengubah firewall.
+- Jangan mengubah aplikasi existing.
+- Jangan menghapus file.
+- Jangan menjalankan migration.
+- Jangan git push.
+- Jangan expose secret.
+
+Lakukan AUDIT READ-ONLY terhadap server dan repository Hermes.
+
+Periksa:
+
+1. OS dan version
+2. CPU
+3. RAM
+4. Disk
+5. Docker tersedia atau tidak
+6. Node.js version
+7. pnpm/npm/yarn version
+8. Git version
+9. repository Hermes location
+10. current git branch
+11. current commit
+12. working tree status
+13. port yang sedang digunakan
+14. process yang sedang berjalan
+15. systemd service terkait Hermes jika ada
+16. Docker container terkait Hermes jika ada
+17. reverse proxy:
+   - Nginx
+   - Caddy
+   - Traefik
+   - lainnya
+18. domain yang sudah diarahkan ke VPS jika dapat diketahui tanpa mengubah apa pun
+19. database yang tersedia
+20. Redis/queue jika ada
+21. persistent storage yang tersedia
+22. apakah worker/scheduler membutuhkan process terpisah
+
+Jangan tampilkan credential atau secret.
+
+Untuk environment variable:
+- tampilkan NAMA variable saja
+- jangan tampilkan VALUE
+- jangan membaca/menampilkan API key/token/password.
+
+
+REPOSITORY AUDIT
+----------------
+
+Pastikan repository Hermes berada di lokasi yang benar.
+
+Tampilkan:
+
+REPOSITORY:
+PATH:
+BRANCH:
+COMMIT:
+WORKING TREE:
+PACKAGE MANAGER:
+RUNTIME:
+BUILD COMMAND:
+START COMMAND:
+
+Jangan mengubah repository.
+
+
+DEPLOYMENT RECOMMENDATION
+-------------------------
+
+Berdasarkan kondisi VPS yang sebenarnya, rekomendasikan salah satu:
+
+A. Docker deployment
+B. Native Node.js + systemd
+C. Existing deployment architecture
+
+Pilih berdasarkan kondisi nyata server, bukan asumsi.
+
+Jika Hermes membutuhkan:
+- API process
+- worker
+- scheduler
+- database
+- Redis
+
+jelaskan process/service yang dibutuhkan.
+
+
+PORT CONFLICT
+-------------
+
+Identifikasi port yang tersedia dan port yang sedang digunakan.
+
+Jangan memilih port dengan mematikan service existing.
+
+Jika port Hermes sudah ditentukan oleh konfigurasi repository, tampilkan port tersebut dan apakah bentrok.
+
+
+RESOURCE CHECK
+--------------
+
+Nilai apakah resource VPS cukup untuk Hermes.
+
+Tampilkan:
+
+RAM:
+CPU:
+DISK:
+Estimated Hermes requirement:
+STATUS = READY / NEEDS_MORE_RESOURCES
+
+
+FINAL REPORT
+------------
+
+HERMES DEPLOYMENT DISCOVERY
+
+Server:
+OS:
+CPU:
+RAM:
+Disk:
+
+Runtime:
+Node:
+Package manager:
+Docker:
+Git:
+
+Hermes:
+Path:
+Branch:
+Commit:
+Working tree:
+
+Ports:
+Database:
+Redis:
+Worker:
+Scheduler:
+Reverse proxy:
+
+Recommended deployment:
+Reason:
+
+Blockers:
+
+Jangan melakukan deployment pada tahap ini.
+Berhenti setelah laporan selesai.
 ```
 # 
 ```
