@@ -54,7 +54,94 @@
 ```
 # 
 ```
+Audit HANYA routing GLM-5.3-Flash sekarang.
 
+Tujuan:
+Pastikan apakah model:
+cline/z-ai/glm-5.3-flash
+
+sebenarnya diarahkan ke NVIDIA API atau salah diarahkan ke Z.AI langsung.
+
+JANGAN melakukan perubahan kode/config terlebih dahulu.
+
+1. Cari seluruh konfigurasi terkait:
+   - cline/z-ai/glm-5.3-flash
+   - glm-5.3
+   - glm-5.3-flash
+   - NVIDIA provider
+   - Z.AI provider
+   - model router
+   - provider registry
+   - environment variable model/base URL/API key
+
+2. Tampilkan hasil audit dalam bentuk ringkas:
+   MODEL UI
+   → INTERNAL MODEL ID
+   → PROVIDER ID
+   → BASE URL
+   → UPSTREAM MODEL ID
+   → API KEY ENV NAME
+
+   API key hanya tampilkan NAMA environment variable.
+   JANGAN tampilkan nilai API key.
+
+3. Pastikan apakah:
+   cline/z-ai/glm-5.3-flash
+   sedang dipetakan ke:
+
+   A. NVIDIA API
+   atau
+   B. Z.AI API langsung
+
+4. Jika NVIDIA:
+   pastikan upstream model ID yang digunakan memang ID NVIDIA/NIM yang sesuai, dan jangan menyamakan model UI dengan provider ID.
+
+5. Jika Z.AI:
+   jangan ubah apa pun.
+   Laporkan bahwa jalurnya saat ini adalah Z.AI langsung dan bukan NVIDIA.
+
+6. Audit juga .env dan service environment secara READ-ONLY.
+   Hanya cek keberadaan nama variable:
+   - NVIDIA API key
+   - GLM/Z.AI API key
+   - model
+   - base URL
+
+   Jangan pernah mencetak secret.
+
+7. Jangan:
+   - mengganti API key
+   - mengubah model
+   - mengubah provider
+   - mengubah base URL
+   - restart service
+   - commit
+   - push
+   - menambahkan fallback
+   - mengubah Telegram
+   - mengubah AI Registry
+
+8. Jangan menjalankan live inference.
+
+9. Berikan laporan akhir dengan format:
+
+MODEL UI:
+INTERNAL MODEL:
+PROVIDER:
+BASE URL:
+UPSTREAM MODEL:
+API KEY ENV:
+JALUR:
+NVIDIA / Z.AI
+
+ROOT CAUSE / KESIMPULAN:
+...
+
+STATUS PERUBAHAN:
+Tidak ada perubahan.
+
+PUSH:
+NO
 ```
 # 
 ```
