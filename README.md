@@ -14,7 +14,577 @@
 ```
 # 
 ```
+TASK: Simplify Telegram Agent/Provider/Model Selection + Add Thinking/Typing Indicator
 
+Project:
+Hermes Agent
+
+GOAL:
+Rapikan flow pemilihan AI di Telegram agar sederhana dan intuitif:
+
+/agent
+→ pilih Provider/AI Environment
+→ pilih AI Model dari provider tersebut
+→ model aktif
+→ user mulai chat
+
+Jangan membuat flow Agent → Model → Provider yang panjang.
+
+TARGET FLOW:
+
+/agent
+
+🤖 Pilih Agent / Provider
+
+[ NVIDIA API ]
+[ provider lain yang sudah terdaftar ]
+
+Jika user memilih NVIDIA API:
+
+🧠 NVIDIA API — AI Models
+
+[ DeepSeek ]
+[ GLM ]
+[ Muse ]
+
+[ ⬅️ Kembali ]
+
+Jika user memilih Muse:
+
+✅ Model aktif:
+NVIDIA API → Muse
+
+Model ID:
+cline/meta/muse-spark-1.3-contributor
+
+Kemudian user bisa langsung mengirim pertanyaan.
+
+==================================================
+1. AUDIT EXISTING TELEGRAM FLOW
+==================================================
+
+Audit terlebih dahulu:
+
+- /start
+- /agent
+- /model
+- callback handlers
+- inline keyboards
+- AgentRegistry
+- ProviderRegistry
+- ModelRegistry
+- session state / selected agent
+- selected provider
+- selected model
+- runtime inference
+
+Jangan membuat sistem baru jika functionality existing dapat dirapikan.
+
+Pertahankan architecture Hermes yang sudah ada.
+
+==================================================
+2. PROVIDER-FIRST SELECTION
+==================================================
+
+Ubah flow pemilihan agar provider menjadi level pertama.
+
+Konsep:
+
+Agent/Provider
+    ↓
+Provider selected
+    ↓
+Models belonging to provider
+    ↓
+Model selected
+    ↓
+Active session
+
+Untuk NVIDIA API:
+
+Provider ID:
+nvidia-api
+
+Model yang tersedia minimal:
+
+1. DeepSeek
+2. GLM
+3. Muse
+
+Model harus diambil dari ModelRegistry/provider registry yang existing, bukan hardcoded di Telegram handler.
+
+PENTING:
+
+Jangan hardcode daftar model di UI Telegram.
+
+Telegram harus membaca:
+
+provider → registered models
+
+sehingga nanti ketika model baru ditambahkan ke registry, otomatis muncul di menu provider tersebut.
+
+==================================================
+3. NVIDIA API MODELS
+==================================================
+
+Pastikan model berikut tetap ada dan tidak rusak:
+
+GLM:
+
+Provider:
+nvidia-api
+
+Model ID:
+cline/z-ai/glm-5.3-flash
+
+Muse:
+
+Provider:
+nvidia-api
+
+Model ID:
+cline/meta/muse-spark-1.3-contributor
+
+Jika DeepSeek sudah terdaftar di provider nvidia-api, pertahankan konfigurasi existing.
+
+Jika belum ada model DeepSeek yang valid di registry, JANGAN membuat model ID palsu.
+
+Dalam kondisi tersebut tampilkan hanya model yang benar-benar terdaftar/valid.
+
+==================================================
+4. MODEL ID
+==================================================
+
+Jangan mengubah model ID Muse.
+
+EXACT:
+
+cline/meta/muse-spark-1.3-contributor
+
+Jangan mengubah menjadi:
+
+meta/muse-spark-1.3-contributor
+muse-spark-1.3-contributor
+nvidia/muse-spark-1.3-contributor
+
+Model harus dikirim ke nvidia-api proxy menggunakan exact ID tersebut.
+
+GLM juga harus tetap:
+
+cline/z-ai/glm-5.3-flash
+
+==================================================
+5. PROVIDER CONFIG
+==================================================
+
+NVIDIA API tetap menggunakan provider existing:
+
+providerId:
+nvidia-api
+
+Base URL:
+NVIDIA_API_PROXY_BASE_URL
+
+API key:
+NVIDIA_API_PROXY_API_KEY
+
+Jangan membuat provider baru.
+
+Jangan hardcode Base URL.
+
+Jangan hardcode API key.
+
+Jangan menampilkan secret di Telegram/log/test output.
+
+==================================================
+6. NO AUTOMATIC FALLBACK
+==================================================
+
+Pertahankan aturan:
+
+NO automatic fallback.
+
+Jika user memilih:
+
+NVIDIA API → Muse
+
+maka request hanya menggunakan:
+
+nvidia-api
++
+cline/meta/muse-spark-1.3-contributor
+
+Jangan berpindah otomatis ke GLM, DeepSeek, provider lain, atau model lain jika request gagal.
+
+Jika error, tampilkan error yang sesuai kepada user.
+
+==================================================
+7. NO AUTOMATIC MODEL BINDING
+==================================================
+
+Jangan membuat automatic model binding.
+
+User tetap memilih model secara manual.
+
+Session harus mengingat model yang dipilih sampai user menggantinya.
+
+==================================================
+8. TELEGRAM THINKING / TYPING INDICATOR
+==================================================
+
+Tambahkan UX saat user mengirim pesan dan Hermes sedang menunggu response model.
+
+Sebelum inference dimulai, Telegram harus menampilkan status:
+
+typing
+
+atau equivalent Telegram chat action yang membuat user melihat bot sedang mengetik.
+
+Target UX:
+
+User:
+Halo Muse
+
+Telegram:
+Muse sedang mengetik...
+
+[Telegram typing indicator]
+
+Kemudian setelah response selesai:
+
+Telegram:
+Halo! ...
+
+Typing indicator harus dihentikan setelah response berhasil atau gagal.
+
+==================================================
+9. LONG RESPONSE / LONG INFERENCE
+==================================================
+
+Jika inference membutuhkan waktu lama, jangan biarkan typing indicator berhenti terlalu cepat.
+
+Gunakan mekanisme refresh berkala selama request masih berjalan jika diperlukan oleh implementasi Telegram yang digunakan.
+
+Contoh:
+
+request started
+↓
+send typing
+↓
+inference running
+↓
+refresh typing periodically
+↓
+response received
+↓
+stop typing
+↓
+send response
+
+Jangan membuat infinite loop.
+
+Pastikan interval/timeout dibersihkan pada:
+
+- success
+- error
+- timeout
+- cancellation
+
+==================================================
+10. ERROR HANDLING
+==================================================
+
+Jika model gagal:
+
+stop typing indicator
+
+kemudian kirim pesan error yang aman.
+
+Jangan tampilkan:
+
+- API key
+- Authorization header
+- secret
+- .env content
+- internal credentials
+
+Boleh menampilkan informasi umum seperti:
+
+"Model sedang mengalami error. Silakan coba lagi."
+
+Untuk debugging, detail tetap hanya di server log dengan secret redaction.
+
+==================================================
+11. MENU UX
+==================================================
+
+Buat keyboard sederhana.
+
+Contoh:
+
+/agent
+
+🤖 Pilih Agent / Provider
+
+[ NVIDIA API ]
+[ Provider lain ]
+
+Setelah NVIDIA API:
+
+🧠 NVIDIA API
+
+[ DeepSeek ]
+[ GLM ]
+[ Muse ]
+
+[ ⬅️ Kembali ]
+
+Setelah model dipilih:
+
+✅ Model aktif:
+NVIDIA API → Muse
+
+Kemudian user langsung dapat chat.
+
+Jangan membuat terlalu banyak menu konfirmasi.
+
+==================================================
+12. BACK BUTTON
+==================================================
+
+Implementasikan:
+
+Model list
+→ Back
+→ Provider list
+
+Provider list
+→ Back
+→ previous Telegram screen / start menu
+
+Pastikan callback lama tidak rusak.
+
+==================================================
+13. /MODEL COMMAND
+==================================================
+
+Jika /model masih digunakan oleh architecture existing, pertahankan compatibility.
+
+Namun flow /model juga harus mengikuti pola:
+
+Provider
+→ Models
+
+bukan:
+
+Agent
+→ Provider
+→ Model
+
+Jika memungkinkan, /model langsung membuka daftar provider.
+
+==================================================
+14. ACTIVE SESSION
+==================================================
+
+Pastikan session menyimpan minimal:
+
+selectedProviderId
+selectedModelId
+
+Jika architecture existing masih memiliki selectedAgent, jangan merusak compatibility.
+
+Tetapi jangan membuat user harus memilih ulang agent/provider/model setiap kali bertanya.
+
+==================================================
+15. LEARNING ARCHITECTURE
+==================================================
+
+Untuk testing Muse kali ini:
+
+JANGAN gunakan file learning Muse Spark sebagai system instruction.
+
+Jangan otomatis memasukkan:
+
+ai/learning/sources/temporary/muse-spark-1.3.md
+
+ke dalam prompt inference.
+
+Testing harus murni:
+
+Telegram
+→ Hermes
+→ nvidia-api
+→ Muse model
+
+Generic learning architecture Hermes jangan dihapus jika masih digunakan feature lain.
+
+Hanya pastikan Muse inference tidak bergantung pada learning file tersebut.
+
+==================================================
+16. RUNTIME TEST
+==================================================
+
+Setelah implementasi, lakukan test configuration dan runtime.
+
+Test 1:
+
+Provider:
+nvidia-api
+
+Model:
+cline/meta/muse-spark-1.3-contributor
+
+Prompt:
+
+Reply exactly:
+MUSE_PROXY_OK
+
+Expected:
+
+MUSE_PROXY_OK
+
+Test 2:
+
+GLM existing:
+
+cline/z-ai/glm-5.3-flash
+
+Pastikan masih dapat digunakan.
+
+Test 3:
+
+Telegram:
+
+/agent
+→ NVIDIA API
+→ Muse
+
+Send:
+
+Reply exactly with:
+MUSE_TELEGRAM_OK
+
+Expected:
+
+MUSE_TELEGRAM_OK
+
+Test 4:
+
+Typing indicator:
+
+Send message
+→ typing indicator appears
+→ inference runs
+→ response arrives
+→ typing indicator stops
+
+==================================================
+17. TESTS
+==================================================
+
+Run:
+
+- existing unit tests
+- Telegram-related tests
+- provider tests
+- model registry tests
+- integration tests
+- typecheck
+- lint
+- format check
+- security/secret scan
+
+Target:
+
+0 failed
+
+Existing baseline skipped tests may remain skipped.
+
+==================================================
+18. SECURITY
+==================================================
+
+Never expose:
+
+NVIDIA_API_PROXY_API_KEY
+
+Telegram bot token
+
+.env contents
+
+Authorization headers
+
+credentials
+
+private keys
+
+Ensure secrets remain ENV-based and gitignored.
+
+==================================================
+19. GIT
+==================================================
+
+Do NOT push to GitHub.
+
+Do not modify unrelated files.
+
+If commit is needed by project workflow, create LOCAL commit only.
+
+Suggested commit:
+
+feat: simplify telegram provider model selection
+
+But do not push.
+
+==================================================
+20. FINAL AUDIT REPORT
+==================================================
+
+Setelah selesai, tampilkan:
+
+1. Files changed
+2. Provider flow before/after
+3. Telegram flow before/after
+4. Available NVIDIA API models
+5. Muse model ID
+6. GLM verification
+7. DeepSeek verification
+8. Typing indicator implementation
+9. Runtime Muse result
+10. Telegram Muse result
+11. Test results
+12. Typecheck
+13. Lint
+14. Security scan
+15. Git status
+16. Commit hash jika ada
+17. Confirm: NOT PUSHED
+
+IMPORTANT:
+
+Jangan membuat UI web/admin pada task ini.
+
+Jangan mengubah Agent Core.
+
+Jangan membuat automatic fallback.
+
+Jangan membuat automatic model binding.
+
+Jangan mengubah model ID Muse.
+
+Jangan mengubah model ID GLM.
+
+Jangan membuat provider NVIDIA official.
+
+"nvidia-api" adalah proxy/gateway milik project dan tetap menggunakan:
+
+NVIDIA_API_PROXY_BASE_URL
+NVIDIA_API_PROXY_API_KEY
+
+Fokus task hanya:
+
+PROVIDER → MODELS → MODEL ACTIVE → TELEGRAM CHAT → TYPING INDICATOR → RESPONSE.
 ```
 # 
 ```
