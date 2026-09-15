@@ -82,7 +82,171 @@
 ```
 # 
 ```
+HERMES — CONFIGURE TELEGRAM ALLOW-LIST
+======================================
 
+Telegram bot token SUDAH BENAR dan handler SUDAH INITIALIZED.
+
+Current blocker:
+
+TELEGRAM BLOCKED — allow-list user kosong (deny-by-default)
+
+Sekarang konfigurasi allow-list Telegram production.
+
+PENTING:
+- Jangan mengubah bot token.
+- Jangan menampilkan bot token.
+- Jangan mengubah kode Telegram.
+- Jangan membuat bot baru.
+- Jangan mengubah database.
+- Jangan mengubah DNS.
+- Jangan mengubah Caddy.
+- Jangan restart service lain.
+- Jangan git push.
+- Jangan commit secret.
+
+
+STEP 1 — ENV CONFIG
+-------------------
+
+Gunakan environment variable existing:
+
+HERMES_TELEGRAM_ALLOWED_USERS
+
+Nilainya harus berupa NUMERIC TELEGRAM USER ID.
+
+Jangan menggunakan:
+- username
+- @username
+- display name
+
+Minta USER memasukkan numeric Telegram User ID miliknya langsung ke:
+
+/root/hermes-agent/.env
+
+Jangan tampilkan nilai ID pada output jika tidak diperlukan.
+
+
+STEP 2 — PRESERVE EXISTING CONFIG
+---------------------------------
+
+Jangan menghapus configuration Telegram lain.
+
+Pastikan:
+
+HERMES_TELEGRAM_ENABLED=true
+
+Bot token tetap menggunakan variable existing yang benar.
+
+HERMES_TELEGRAM_ALLOWED_USERS=<numeric Telegram user ID>
+
+Jika format allow-list mendukung beberapa user:
+ikuti format yang sudah digunakan source code.
+
+Jangan mengarang format baru.
+
+
+STEP 3 — SECURITY
+-----------------
+
+Pastikan:
+
+- .env tetap permission aman
+- .env tetap git-ignored
+- bot token tidak tracked
+- API key tidak tracked
+- tidak ada secret pada logs
+- tidak ada token pada output
+- allow-list tidak memberikan admin permission secara otomatis
+
+
+STEP 4 — RESTART
+----------------
+
+Setelah allow-list diisi:
+
+restart HANYA:
+
+hermes-agent.service
+
+Tunggu sampai:
+
+active (running)
+
+
+STEP 5 — VERIFY
+---------------
+
+Test:
+
+/health
+/ready
+
+Pastikan:
+
+health = HTTP 200
+ready = OK
+
+Kemudian pastikan Telegram runtime:
+
+- bot initialized
+- polling/webhook aktif sesuai architecture existing
+- allow-list loaded
+- configured user allowed
+
+
+STEP 6 — DO NOT RUN AI YET
+--------------------------
+
+Jangan menjalankan live AI inference dari server.
+
+Kita akan melakukan test melalui Telegram client setelah bot online.
+
+
+STEP 7 — GIT
+------------
+
+Pastikan:
+
+git status --short
+
+.env tidak muncul sebagai perubahan yang akan di-commit.
+
+Jangan commit credential.
+Jangan push.
+
+
+FINAL REPORT
+------------
+
+TELEGRAM:
+
+Enabled:
+Token:
+Allow-list:
+Handler:
+Runtime:
+Service:
+
+Health:
+Ready:
+
+Git:
+Working tree:
+Push: NO
+
+Live AI:
+NOT RUN
+
+Jika allow-list berhasil dan bot aktif:
+
+TELEGRAM BOT ONLINE — READY FOR MANUAL TEST
+
+Jika user ID belum diberikan:
+
+WAITING FOR TELEGRAM USER ID
+
+Jangan tampilkan token atau secret.
 ```
 # 
 ```
