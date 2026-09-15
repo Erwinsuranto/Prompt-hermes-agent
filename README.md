@@ -42,7 +42,446 @@
 ```
 # 
 ```
+Lanjutkan Hermes Agent dari commit e301396.
 
+TUJUAN:
+Implementasikan konfigurasi Provider + Model secara global agar:
+- BASE_URL SEMUA provider hanya berasal dari ENV/config runtime.
+- API key SEMUA provider hanya berasal dari ENV/config secret.
+- NVIDIA menjadi provider OpenAI-compatible yang bisa dikonfigurasi tanpa hardcode URL.
+- Z.AI tetap tersedia sebagai provider terpisah.
+- Model dapat ditambahkan lewat konfigurasi tanpa coding jika protocol provider sudah didukung.
+- Tidak ada automatic model binding.
+- Tidak ada automatic fallback.
+
+JANGAN menjalankan live inference.
+
+==================================================
+1. GLOBAL PROVIDER CONFIG CONTRACT
+==================================================
+
+Audit implementasi e301396 lalu sempurnakan jika diperlukan.
+
+Setiap provider harus mempunyai konsep:
+
+providerId
+name
+protocol
+apiKeyEnv
+baseUrlEnv
+models
+
+Setiap model:
+
+modelId Hermes
+name
+upstreamModelId
+enabled
+providerId
+
+Pastikan Provider Registry menjadi SINGLE SOURCE OF TRUTH.
+
+Jangan membuat daftar model terpisah di:
+- Telegram
+- Model Router
+- Agent Core
+- AI Registry
+- adapter
+
+==================================================
+2. BASE URL — ENV ONLY
+==================================================
+
+WAJIB:
+
+Tidak boleh ada operational hardcoded provider URL di source code.
+
+Contoh yang TIDAK BOLEH menjadi default/fallback:
+
+https://api.z.ai/...
+https://integrate.api.nvidia.com/...
+https://api.deepseek.com/...
+
+Source code hanya mengetahui nama variable:
+
+NVIDIA_BASE_URL
+ZAI_BASE_URL
+DEEPSEEK_BASE_URL
+
+Nilai URL berasal dari environment runtime.
+
+Jika BASE_URL ENV tidak tersedia:
+- fail closed
+- error konfigurasi yang jelas
+- JANGAN fallback ke URL hardcoded.
+
+==================================================
+3. API KEY — ENV ONLY
+==================================================
+
+API key tidak boleh disimpan di model catalog.
+
+Provider hanya menyimpan:
+
+apiKeyEnv: NVIDIA_API_KEY
+
+atau:
+
+apiKeyEnv: ZAI_API_KEY
+
+Credential resolver mengambil nilai runtime dari ENV.
+
+Jangan pernah mencetak nilai secret.
+
+==================================================
+4. NVIDIA PROVIDER
+==================================================
+
+Tambahkan/rapikan provider:
+
+providerId:
+nvidia
+
+protocol:
+openai-compatible
+
+credential:
+NVIDIA_API_KEY
+
+base URL:
+NVIDIA_BASE_URL
+
+Jangan menentukan nilai NVIDIA_BASE_URL di source code.
+
+Provider NVIDIA harus dapat memiliki banyak model melalui config.
+
+Contoh konsep:
+
+nvidia:
+  models:
+    glm-5.3-flash:
+      name: GLM-5.3-Flash
+      upstreamModelId: zai-org/GLM-5.3-Flash
+
+    deepseek-v3:
+      name: DeepSeek V3
+      upstreamModelId: <gunakan ID NVIDIA yang memang sudah ada di repository/config>
+
+    llama-3.1:
+      name: Llama 3.1
+      upstreamModelId: <gunakan ID yang memang sudah tersedia>
+
+PENTING:
+JANGAN mengarang model ID NVIDIA.
+
+Gunakan hanya model yang:
+- sudah ada di repository/config, atau
+- jelas berasal dari konfigurasi yang sudah dimiliki project.
+
+Jika model NVIDIA belum terdaftar, jangan menebak.
+
+==================================================
+5. Z.AI PROVIDER
+==================================================
+
+Z.AI tetap dipertahankan sebagai provider terpisah.
+
+Provider:
+
+zai
+
+atau provider ID existing yang sudah digunakan Hermes.
+
+Credential:
+ZAI_API_KEY
+
+Base URL:
+ZAI_BASE_URL
+
+Tidak boleh ada URL Z.AI hardcoded.
+
+Model GLM yang menggunakan Z.AI harus tetap bisa dikonfigurasi secara terpisah dari NVIDIA.
+
+Jangan mencampurkan:
+
+NVIDIA provider
+dengan
+Z.AI provider.
+
+==================================================
+6. LEGACY GLM ENV
+==================================================
+
+Audit penggunaan:
+
+GLM5_3_API_KEY
+GLM5_3_BASE_URL
+GLM_5_3_API_KEY
+GLM_5_3_BASE_URL
+
+Buat canonical configuration yang konsisten.
+
+Jangan menghapus backward compatibility secara sembrono.
+
+Jika legacy variable masih digunakan:
+- buat compatibility resolver yang jelas.
+- jangan menyimpan secret.
+- jangan membuat konflik silent.
+
+Prioritas environment harus eksplisit dan terdokumentasi.
+
+Untuk provider Z.AI gunakan konfigurasi provider-level seperti:
+
+ZAI_API_KEY
+ZAI_BASE_URL
+
+Untuk NVIDIA:
+
+NVIDIA_API_KEY
+NVIDIA_BASE_URL
+
+Model-specific credential hanya dipakai jika arsitektur existing memang benar-benar membutuhkan; jangan membuat kompleksitas baru tanpa alasan.
+
+==================================================
+7. MODEL ID
+==================================================
+
+Pastikan tiga konsep ini selalu dipisahkan:
+
+PROVIDER ID
+nvidia
+
+HERMES MODEL ID
+glm-5.3-flash
+
+UPSTREAM MODEL ID
+zai-org/GLM-5.3-Flash
+
+Jika UI existing menggunakan:
+
+cline/z-ai/glm-5.3-flash
+
+jangan rusak backward compatibility.
+
+Buat alias hanya jika memang diperlukan.
+
+Jangan menjadikan:
+cline/z-ai/glm-5.3-flash
+sebagai provider ID.
+
+==================================================
+8. TELEGRAM
+==================================================
+
+`/model` harus mengambil data dari Provider/Model Registry.
+
+Behavior:
+
+/model
+→ provider list
+→ pilih provider
+→ model list
+→ pilih model
+
+Manual selection tetap.
+
+Fallback tetap disabled.
+
+Jangan mengubah UX lebih dari yang diperlukan.
+
+Jangan hardcode daftar model di Telegram.
+
+==================================================
+9. AI AGENT
+==================================================
+
+Muse / DeepSeek / GLM / agent lainnya harus tetap memilih model secara manual.
+
+Agent profile tidak boleh diam-diam menentukan provider/model otomatis.
+
+Jangan membuat automatic binding.
+
+==================================================
+10. DYNAMIC MODEL
+==================================================
+
+Model baru pada provider dengan protocol yang sudah didukung harus cukup ditambahkan melalui registry/config:
+
+provider:
+  nvidia:
+    models:
+      new-model:
+        name: New Model
+        upstreamModelId: upstream/new-model
+        enabled: true
+
+Tanpa membuat adapter baru.
+
+Pastikan registry reload/startup membaca konfigurasi tersebut.
+
+Jangan membuat live reload kompleks jika belum dibutuhkan.
+
+==================================================
+11. VALIDATION
+==================================================
+
+Validasi:
+
+Provider:
+- ID valid
+- duplicate provider
+- protocol valid
+- apiKeyEnv valid
+- baseUrlEnv valid
+
+Model:
+- ID valid
+- duplicate model
+- provider exists
+- upstreamModelId valid
+- enabled boolean
+
+Security:
+- no arbitrary secret injection
+- no Authorization header dari model config
+- no hardcoded API keys
+- no hardcoded operational BASE_URL
+- no path traversal melalui config
+- no secret logging
+
+==================================================
+12. TESTS
+==================================================
+
+Tambahkan/update tests:
+
+1. NVIDIA provider resolves from ENV.
+2. Z.AI provider resolves from ENV.
+3. Base URL selalu berasal dari ENV.
+4. Missing BASE_URL fails closed.
+5. API key selalu berasal dari ENV.
+6. Missing API key fails closed.
+7. Provider → model resolution.
+8. Hermes model ID → upstream model ID.
+9. Multiple models per provider.
+10. Multiple OpenAI-compatible providers.
+11. Disabled model tidak selectable.
+12. Telegram membaca registry.
+13. Legacy GLM env compatibility.
+14. No hardcoded operational provider URL.
+15. No secret leakage.
+16. Manual selection.
+17. No automatic fallback.
+
+Jangan menggunakan API key asli.
+
+Jangan live inference.
+
+==================================================
+13. ENV TEMPLATE
+==================================================
+
+Update hanya template/example env jika project memang memilikinya.
+
+Gunakan:
+
+NVIDIA_API_KEY=
+NVIDIA_BASE_URL=
+
+ZAI_API_KEY=
+ZAI_BASE_URL=
+
+DEEPSEEK_API_KEY=
+DEEPSEEK_BASE_URL=
+
+Jangan memasukkan secret asli.
+
+Jangan mengubah production .env.
+
+==================================================
+14. IMPORTANT: JANGAN LIVE TEST
+==================================================
+
+Belum waktunya menguji Telegram inference.
+
+Tahap ini hanya memastikan arsitektur dan konfigurasi benar.
+
+Jangan:
+- restart Hermes
+- reboot VPS
+- mengubah production .env
+- mengganti API key
+- menjalankan request ke NVIDIA
+- menjalankan request ke Z.AI
+- menjalankan live inference.
+
+==================================================
+15. VERIFICATION
+==================================================
+
+Jalankan:
+
+tests
+typecheck
+lint
+format check
+security tests
+secret scan
+
+Kemudian lakukan static audit seluruh source:
+
+Cari hardcoded:
+- https://
+- provider endpoint
+- Authorization secrets
+- API key patterns
+
+Bedakan URL dokumentasi/test fixture dari operational runtime URL.
+
+Operational provider URL HARUS berasal dari ENV/config runtime.
+
+==================================================
+16. COMMIT
+==================================================
+
+Jika semua PASS, commit:
+
+feat: add env-driven multi-provider model configuration
+
+Jangan push.
+
+==================================================
+17. LAPORAN AKHIR
+==================================================
+
+Berikan:
+
+1. Provider yang tersedia.
+2. Model yang tersedia per provider.
+3. API_KEY_ENV tiap provider.
+4. BASE_URL_ENV tiap provider.
+5. Legacy ENV compatibility.
+6. Apakah BASE_URL masih hardcoded.
+7. Apakah model baru sudah bisa ditambahkan tanpa coding.
+8. Status Telegram registry.
+9. Tests pass/skip/fail.
+10. Typecheck.
+11. Lint.
+12. Security.
+13. Commit hash.
+14. Push: NO.
+
+PENTING:
+- Jangan tampilkan secret.
+- Jangan commit secret.
+- Jangan mengarang model ID.
+- Jangan mengarang endpoint.
+- Jangan live inference.
+- Jangan fallback otomatis.
+- Jangan automatic model binding.
+- Jangan mengubah Facebook/ContentPilot.
+- Jangan mengubah Muse Spark.
+- Jangan mengubah fitur yang tidak terkait.
 ```
 # 
 ```
