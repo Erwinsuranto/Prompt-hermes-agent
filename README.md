@@ -62,7 +62,309 @@
 ```
 # 
 ```
+PERBAIKI GLM-5.3 PROVIDER RUNTIME — HTTP 403 CREDENTIALS
 
+Konteks:
+Telegram sudah berhasil:
+- bot online
+- allow-list 1 user
+- /agent berhasil memilih GLM AI
+- /model berhasil memilih provider glm-5.3
+- model berhasil dipilih:
+  cline/z-ai/glm-5.3-flash
+- fallback disabled
+- manual model selection
+Tetapi saat mengirim pesan:
+Provider "glm-5.3" rejected credentials (HTTP 403)
+
+Jangan mengubah konsep manual model selection.
+Jangan menambahkan automatic fallback.
+Jangan membuat provider baru.
+Jangan mengubah frontend Telegram.
+Jangan menyentuh Facebook.
+Jangan mengubah Muse Spark raw file.
+
+TUJUAN:
+Cari akar masalah 403 pada provider glm-5.3 dan perbaiki sampai request runtime benar-benar menggunakan credential GLM dari environment.
+
+LANGKAH WAJIB:
+
+1. AUDIT IMPLEMENTASI PROVIDER
+Cari seluruh implementasi provider:
+- glm-5.3
+- GLM
+- Z.AI
+- GLM_5_3_API_KEY
+- GLM5_3_API_KEY
+- GLM_BASE_URL
+- ZAI_API_KEY
+- model registry/provider registry
+- provider adapter
+- Model Router
+- Telegram live inference path
+
+Jangan menebak nama file.
+Baca implementasi yang benar-benar sedang dipakai runtime.
+
+2. AUDIT ENV
+Periksa bagaimana aplikasi membaca .env.
+
+Pastikan production service benar-benar membaca:
+GLM_5_3_API_KEY=<nilai yang saya isi sendiri>
+
+Jika project saat ini menggunakan nama environment variable berbeda, JANGAN membuat dua sistem credential.
+Tetapkan satu nama canonical berdasarkan arsitektur yang sudah ada dan dokumentasikan.
+
+Jika belum ada canonical variable untuk GLM, gunakan:
+GLM_5_3_API_KEY
+
+Tambahkan placeholder ke .env.example jika memang ada file tersebut:
+
+GLM_5_3_BASE_URL=https://api.z.ai/api/paas/v4
+GLM_5_3_API_KEY=
+
+JANGAN pernah menulis nilai API key asli ke:
+- source code
+- .env.example
+- log
+- test output
+- commit
+- Telegram response
+
+3. BASE URL
+Untuk provider GLM-5.3 general API gunakan:
+
+https://api.z.ai/api/paas/v4
+
+Pastikan client tidak menghasilkan URL ganda seperti:
+.../v4/v4/chat/completions
+
+dan tidak menggunakan endpoint coding secara tidak sengaja.
+
+Runtime chat completion harus menuju:
+
+POST https://api.z.ai/api/paas/v4/chat/completions
+
+4. AUTHORIZATION
+Pastikan request menggunakan:
+
+Authorization: Bearer <GLM_5_3_API_KEY>
+
+Jangan:
+- Authorization: <key>
+- x-api-key
+- Bearer Bearer <key>
+- token dari provider lain
+- credential Telegram
+- credential NVIDIA
+- credential DeepSeek
+
+5. MODEL ID
+Periksa mapping model.
+
+User memilih:
+cline/z-ai/glm-5.3-flash
+
+Tetapi provider GLM direct API kemungkinan membutuhkan model ID provider:
+
+glm-5.3-flash
+
+Jangan mengirim prefix:
+cline/z-ai/
+
+ke direct Z.AI API jika adapter memang menggunakan direct Z.AI endpoint.
+
+Buat mapping yang bersih:
+
+UI/registry model:
+cline/z-ai/glm-5.3-flash
+
+provider:
+glm-5.3
+
+upstream model:
+glm-5.3-flash
+
+Jangan merusak model ID yang tampil di Telegram.
+
+6. CREDENTIAL VALIDATION
+Tambahkan validasi sebelum request live:
+
+- variable tidak kosong
+- base URL valid
+- API key ada
+- API key tidak ditampilkan
+- request menggunakan credential yang benar
+
+Jika credential kosong, hasil harus jelas:
+GLM provider unavailable: GLM_5_3_API_KEY is not configured
+
+Jangan menyamarkan credential error sebagai model unavailable.
+
+7. DIAGNOSTIC 403 YANG AMAN
+Saat HTTP 401/403, log hanya metadata:
+
+provider
+model
+HTTP status
+base URL host
+endpoint path
+request duration
+request id jika diberikan provider
+
+JANGAN log:
+- API key
+- Authorization header
+- full request headers
+- secret
+- full environment
+- prompt jika mengandung credential
+
+Contoh aman:
+
+provider=glm-5.3
+model=glm-5.3-flash
+status=403
+host=api.z.ai
+path=/api/paas/v4/chat/completions
+
+8. JANGAN MEMATIKAN SECURITY
+Jangan:
+- hardcode key
+- bypass 403
+- retry tanpa batas
+- mengganti credential otomatis
+- fallback ke provider lain
+- menerima certificate invalid
+- menonaktifkan TLS
+- mencetak secret untuk debugging
+
+9. SERVICE ENVIRONMENT
+Periksa bagaimana systemd service hermes-agent mendapatkan environment.
+
+Ini penting karena:
+.env di shell ≠ otomatis tersedia di systemd.
+
+Pastikan service membaca environment yang benar TANPA menyalin secret ke repository.
+
+Gunakan mekanisme yang sudah dipakai project.
+
+Jika perlu systemd EnvironmentFile, gunakan file secret yang aman dan tidak tracked.
+
+Jangan restart service sampai perubahan siap dan tervalidasi.
+
+10. TEST PROVIDER SECARA LANGSUNG
+Tambahkan/gunakan test runtime kecil yang tidak menampilkan API key.
+
+Test harus memastikan:
+
+env credential terbaca
+        ↓
+GLM provider initialized
+        ↓
+base URL benar
+        ↓
+Bearer auth benar
+        ↓
+model ID benar
+        ↓
+chat completion request
+        ↓
+response diterima
+
+Gunakan prompt minimal:
+
+Reply exactly: GLM_RUNTIME_OK
+
+Batasi token/output dan timeout.
+
+11. TEST TELEGRAM ROUTING
+Setelah provider runtime valid, pastikan jalur:
+
+Telegram
+→ selected agent = glm
+→ selected model = cline/z-ai/glm-5.3-flash
+→ provider = glm-5.3
+→ upstream model = glm-5.3-flash
+→ existing Model Router
+→ GLM provider
+→ Z.AI API
+→ response
+→ Telegram
+
+Tidak boleh terjadi automatic fallback.
+
+12. PENTING — JANGAN TEST DENGAN CREDENTIAL PALSU
+Jika credential yang sekarang ada ternyata invalid/revoked, jangan mengubah kode untuk "membuatnya terlihat berhasil".
+
+Tampilkan diagnostic yang jelas bahwa credential ditolak provider.
+
+13. MIGRATION / DATABASE
+Jangan membuat migration kecuali benar-benar diperlukan.
+Jangan mengubah schema hanya untuk memperbaiki provider auth.
+
+14. TEST SUITE
+Jalankan:
+- existing tests
+- provider tests
+- Telegram routing tests
+- typecheck
+- lint
+- format
+- security tests
+- secret scan
+
+Pastikan tidak ada API key dalam test output.
+
+15. LIVE TEST
+Setelah semua valid, lakukan satu live smoke test menggunakan credential yang sudah tersedia di environment.
+
+Prompt:
+Reply exactly: GLM_RUNTIME_OK
+
+Jangan melakukan tool call atau side effect.
+
+16. GIT
+Jika berhasil:
+- tampilkan file yang berubah
+- tampilkan test result
+- tampilkan live inference result tanpa secret
+- pastikan git working tree
+- commit perubahan
+
+Gunakan commit message:
+
+fix: repair glm runtime credentials
+
+JANGAN PUSH.
+
+17. SERVICE SAFETY
+Jangan mematikan Hermes secara permanen.
+Jika perlu restart, lakukan hanya setelah perubahan tervalidasi dan pastikan:
+
+systemctl status hermes-agent
+/health = 200
+/ready = 200
+
+FINAL REPORT HARUS MENJAWAB:
+
+1. Penyebab HTTP 403 apa?
+2. Environment variable apa yang digunakan?
+3. Base URL yang digunakan?
+4. Upstream model ID yang dikirim?
+5. Apakah Bearer authentication benar?
+6. Apakah systemd membaca credential?
+7. Apakah live inference berhasil?
+8. Hasil exact response smoke test:
+   GLM_RUNTIME_OK
+9. Jumlah test pass/skip/fail
+10. Commit hash
+11. Push: NO
+
+BERHENTI setelah laporan.
+
+Jangan lanjut ke Facebook, image generation, atau fitur lain.
+Fokus hanya memperbaiki GLM runtime 403.
 ```
 # 
 ```
