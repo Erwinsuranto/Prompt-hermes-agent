@@ -30,6 +30,376 @@
 ```
 # 
 ```
+PENTING: KOREKSI PEMAHAMAN ARSITEKTUR.
+
+`nvidia-api` BUKAN NVIDIA API resmi.
+`nvidia-api` adalah PROXY/GATEWAY milik user yang digunakan Hermes untuk mengakses model dari provider lain.
+
+Model:
+cline/z-ai/glm-5.3-flash
+
+adalah model Cline/Z.AI yang diakses MELALUI proxy `nvidia-api`.
+
+ARSITEKTUR YANG BENAR:
+
+Hermes Agent
+    ↓
+Provider Proxy / nvidia-api
+    ↓
+Cline/Z.AI
+    ↓
+GLM-5.3-Flash
+
+JANGAN mengubah model:
+cline/z-ai/glm-5.3-flash
+
+menjadi:
+zai-org/GLM-5.3-Flash
+
+JANGAN menganggap `nvidia-api` sebagai provider upstream NVIDIA.
+
+==================================================
+TUJUAN
+==================================================
+
+Audit bagaimana Hermes harus terhubung ke `nvidia-api` proxy milik user.
+
+BELUM BOLEH mengubah kode.
+
+BELUM BOLEH mengubah .env production.
+
+BELUM BOLEH live inference.
+
+BELUM BOLEH restart service.
+
+BELUM BOLEH commit.
+
+BELUM BOLEH push.
+
+==================================================
+1. INSPEKSI KONTRAK NVIDIA-API PROXY
+==================================================
+
+Cari informasi yang tersedia di project Hermes mengenai `nvidia-api`.
+
+Cari:
+- provider ID
+- base URL
+- API path
+- authentication
+- OpenAI-compatible endpoint
+- chat completions endpoint
+- models endpoint
+- request format
+- response format
+- model ID format
+- apakah proxy meneruskan model ID apa adanya
+- apakah proxy melakukan mapping model
+- apakah proxy membutuhkan prefix provider
+- apakah proxy memiliki API key sendiri
+
+JANGAN menebak.
+
+Jika repository/source `nvidia-api` tidak tersedia di Hermes:
+- jangan membuat asumsi.
+- laporkan informasi apa yang benar-benar diketahui Hermes.
+- cari dokumentasi/config yang sudah ada di project.
+
+==================================================
+2. BEDAKAN PROVIDER PROXY DAN UPSTREAM
+==================================================
+
+Hermes harus memahami:
+
+PROXY PROVIDER:
+nvidia-api
+
+UPSTREAM MODEL:
+cline/z-ai/glm-5.3-flash
+
+UPSTREAM:
+Cline/Z.AI
+
+JANGAN membuat:
+
+provider = NVIDIA official
+model = zai-org/GLM-5.3-Flash
+
+Itu SALAH untuk arsitektur project ini.
+
+==================================================
+3. BASE URL
+==================================================
+
+Hermes hanya menyimpan:
+
+NVIDIA_API_PROXY_BASE_URL
+atau nama ENV yang memang sudah digunakan project.
+
+Nilai BASE_URL harus menunjuk ke:
+
+nvidia-api milik user
+
+Bukan:
+- api.z.ai
+- integrate.api.nvidia.com
+- endpoint upstream lainnya.
+
+Jika nama ENV saat ini sudah berbeda:
+- identifikasi nama existing.
+- jangan langsung rename.
+- laporkan.
+
+Tetap pertahankan prinsip:
+BASE_URL tidak hardcoded di source code.
+
+==================================================
+4. API KEY
+==================================================
+
+Bedakan:
+
+Hermes → nvidia-api credential
+
+dengan:
+
+nvidia-api → upstream credential.
+
+Hermes TIDAK boleh meminta credential Z.AI/Cline langsung jika arsitektur proxy memang menangani upstream.
+
+Cari nama ENV credential proxy yang sudah digunakan project.
+
+JANGAN menampilkan nilai secret.
+
+JANGAN membuat API key baru.
+
+==================================================
+5. MODEL ID
+==================================================
+
+Pertahankan EXACT:
+
+cline/z-ai/glm-5.3-flash
+
+Jangan melakukan normalisasi menjadi:
+- glm-5.3-flash
+- zai-org/GLM-5.3-Flash
+- nvidia/glm-5.3-flash
+
+kecuali source `nvidia-api` sendiri secara eksplisit menunjukkan bahwa proxy memang menggunakan ID lain.
+
+Model ID harus mengikuti kontrak proxy.
+
+==================================================
+6. OPENAI-COMPATIBLE PROXY
+==================================================
+
+Periksa apakah `nvidia-api` menyediakan endpoint OpenAI-compatible.
+
+Jika ya, tentukan secara READ-ONLY:
+
+BASE URL
++
+path yang digunakan
++
+model field
++
+authentication
+
+Contoh konsep saja:
+
+POST <NVIDIA_API_PROXY_BASE_URL>/v1/chat/completions
+
+body:
+{
+  "model": "cline/z-ai/glm-5.3-flash",
+  ...
+}
+
+JANGAN mengasumsikan path `/v1/chat/completions`.
+Pastikan dari source/config/dokumentasi yang tersedia.
+
+==================================================
+7. MODEL REGISTRY HERMES
+==================================================
+
+Audit registry hasil refactor `7279ab9`.
+
+Tujuan yang benar:
+
+provider:
+nvidia-api
+
+model:
+cline/z-ai/glm-5.3-flash
+
+display name:
+GLM-5.3-Flash
+
+baseURL:
+ENV → nvidia-api proxy
+
+credential:
+ENV → credential proxy
+
+Tidak boleh ada upstream URL Z.AI di Hermes.
+
+==================================================
+8. Z.AI PROVIDER
+==================================================
+
+Jangan menghapus provider Z.AI yang mungkin memang diperlukan untuk penggunaan DIRECT.
+
+Tetapi jangan mencampurnya dengan model yang sedang diuji melalui proxy.
+
+Harus bisa dibedakan:
+
+Z.AI direct
+vs
+nvidia-api proxy → Cline/Z.AI
+
+Jika keduanya memiliki model ID yang sama, provider scope harus membedakan keduanya.
+
+==================================================
+9. TELEGRAM
+==================================================
+
+Audit `/model`.
+
+Target:
+
+Provider:
+nvidia-api
+
+Model:
+cline/z-ai/glm-5.3-flash
+
+Ketika user memilih model tersebut, Hermes harus mengirim request ke:
+
+nvidia-api proxy
+
+BUKAN langsung ke Z.AI.
+
+Manual selection tetap.
+
+Fallback tetap disabled.
+
+==================================================
+10. ERROR DIAGNOSIS SEBELUMNYA
+==================================================
+
+Catat bahwa error sebelumnya:
+
+Provider "glm-5.3" rejected credentials
+HTTP 401
+
+terjadi karena Hermes sebelumnya mengarah langsung ke:
+
+Z.AI
+
+bukan melalui:
+
+nvidia-api proxy.
+
+Jangan menganggap error tersebut sebagai bukti bahwa API key proxy salah.
+
+==================================================
+11. NVIDIA MODEL_NOT_FOUND
+==================================================
+
+Error sebelumnya:
+
+MODEL_NOT_FOUND
+
+jangan dijadikan alasan untuk mengganti:
+
+cline/z-ai/glm-5.3-flash
+
+menjadi model NVIDIA resmi.
+
+Periksa terlebih dahulu apakah error tersebut terjadi karena Hermes salah menganggap `nvidia-api` sebagai NVIDIA official provider.
+
+Jika iya, dokumentasikan sebagai salah routing/identity.
+
+==================================================
+12. HASIL AUDIT
+==================================================
+
+Berikan tabel:
+
+COMPONENT | CURRENT | EXPECTED
+
+Provider ID
+Model ID
+Base URL ENV
+API key ENV
+Protocol
+API path
+Upstream
+Model field
+Authentication
+Telegram mapping
+
+==================================================
+13. REKOMENDASI
+==================================================
+
+Jika ditemukan ketidaksesuaian, jangan memperbaiki dulu.
+
+Berikan rekomendasi perubahan minimal yang diperlukan agar:
+
+Hermes
+→ nvidia-api proxy
+→ cline/z-ai/glm-5.3-flash
+
+bekerja.
+
+Jangan menyarankan perubahan pada upstream Cline/Z.AI kecuali memang dibutuhkan oleh kontrak proxy.
+
+==================================================
+14. NO CHANGE
+==================================================
+
+WAJIB:
+
+STATUS PERUBAHAN:
+Tidak ada perubahan.
+
+COMMIT:
+Tidak ada.
+
+PUSH:
+NO.
+
+LIVE INFERENCE:
+Tidak dijalankan.
+
+RESTART:
+Tidak dilakukan.
+
+SECRET:
+Tidak ditampilkan.
+
+==================================================
+15. PENTING
+==================================================
+
+Jangan:
+- memakai NVIDIA official API
+- memakai integrate.api.nvidia.com
+- mengganti model ID Cline
+- mengganti cline/z-ai/glm-5.3-flash
+- mengarahkan Hermes langsung ke Z.AI
+- membuat automatic fallback
+- membuat automatic model binding
+- mengubah Agent Core
+- mengubah Model Router tanpa bukti
+- menghapus Z.AI provider
+- mengubah Facebook/ContentPilot
+- mengubah Muse Spark
+
+Fokus hanya memahami dan memetakan kontrak:
+HERMES → NVIDIA-API PROXY.
 
 ```
 # 
