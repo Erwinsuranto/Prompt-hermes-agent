@@ -78,7 +78,156 @@
 ```
 # 
 ```
+LANJUTKAN TELEGRAM SETUP — USER ID SUDAH DIISI
+===============================================
 
+User sudah menambahkan numeric Telegram User ID ke:
+
+/root/hermes-agent/.env
+
+JANGAN bertanya lagi mengenai Telegram User ID.
+
+Sekarang langsung lanjutkan proses dari konfigurasi yang sudah ada.
+
+PENTING:
+- Jangan tampilkan nilai Telegram User ID jika tidak diperlukan.
+- Jangan tampilkan BOT TOKEN.
+- Jangan mengubah BOT TOKEN.
+- Jangan membuat bot baru.
+- Jangan mengubah kode jika tidak diperlukan.
+- Jangan mengubah database.
+- Jangan mengubah DNS/Caddy.
+- Jangan restart service lain.
+- Jangan git push.
+
+
+1. VERIFY ENV
+-------------
+
+Periksa keberadaan:
+
+HERMES_TELEGRAM_ENABLED
+
+HERMES_TELEGRAM_BOT_TOKEN
+
+HERMES_TELEGRAM_ALLOWED_USERS
+
+Tampilkan hanya:
+
+SET / NOT SET
+
+Jangan tampilkan value.
+
+
+2. VALIDATE ALLOW-LIST
+----------------------
+
+Pastikan HERMES_TELEGRAM_ALLOWED_USERS berisi numeric Telegram User ID yang sudah dimasukkan user.
+
+Format harus sesuai parser existing:
+
+satu ID atau beberapa ID dipisahkan koma/spasi sesuai source code.
+
+Jangan meminta user memasukkan ID lagi.
+
+
+3. RESTART HERMES
+-----------------
+
+Jika konfigurasi sudah lengkap, restart hanya:
+
+hermes-agent.service
+
+Kemudian tunggu sampai:
+
+active (running)
+
+
+4. VERIFY SERVICE
+-----------------
+
+Test:
+
+/health
+/ready
+
+Pastikan:
+
+health = 200
+ready = OK
+
+
+5. VERIFY TELEGRAM
+------------------
+
+Pastikan:
+
+- Telegram enabled
+- bot handler initialized
+- allow-list loaded
+- user ID accepted
+- polling/webhook aktif sesuai architecture existing
+- tidak ada authentication error
+- tidak ada crash loop
+
+Periksa log dengan aman.
+
+Jangan tampilkan token atau secret.
+
+
+6. GIT SAFETY
+-------------
+
+Pastikan:
+
+git status --short
+
+.env tidak tracked.
+
+Jangan commit .env.
+Jangan commit credential.
+Jangan push.
+
+
+7. JANGAN TEST AI DULU
+----------------------
+
+Jangan menjalankan live AI inference.
+
+Kita akan test dari Telegram client setelah bot benar-benar online.
+
+
+FINAL REPORT
+------------
+
+TELEGRAM STATUS
+
+Enabled:
+Bot token:
+Allow-list:
+Handler:
+Runtime:
+Service:
+
+Health:
+Ready:
+
+Git:
+Working tree:
+Push: NO
+
+Live AI:
+NOT RUN
+
+Jika berhasil:
+
+TELEGRAM BOT ONLINE — READY FOR MANUAL TEST
+
+Jika gagal:
+
+TELEGRAM BLOCKED
+
+Berikan alasan sebenarnya tanpa meminta ulang User ID yang sudah ada.
 ```
 # 
 ```
