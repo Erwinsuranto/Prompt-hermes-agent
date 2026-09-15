@@ -58,7 +58,20 @@
 ```
 # 
 ```
+Restart Hermes Agent sekarang.
 
+1. Restart service Hermes Agent menggunakan systemd.
+2. Jangan reboot VPS.
+3. Setelah restart, verifikasi:
+   - service active/running
+   - /health = 200
+   - /ready = 200 dan DB ok
+   - Telegram bot kembali online/polling
+4. Jangan mengubah source code, konfigurasi, API key, model, router, atau fitur apa pun.
+5. Jangan commit dan jangan push.
+6. Jangan tampilkan secret/API key di output.
+
+Berikan laporan singkat hasil restart dan status Hermes setelah restart.
 ```
 # 
 ```
