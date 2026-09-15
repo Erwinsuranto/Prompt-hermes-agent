@@ -46,7 +46,191 @@
 ```
 # 
 ```
+Lanjutkan Hermes Agent dari commit e301396.
 
+TUJUAN:
+Audit hasil refactor Provider + Model Configuration yang baru saja selesai.
+
+JANGAN melakukan perubahan kode/config pada tahap ini.
+
+1. Audit seluruh provider dan model yang saat ini terdaftar di Hermes.
+
+Cari dari source/config/registry yang benar-benar digunakan runtime, bukan hanya dokumentasi.
+
+Buat tabel:
+
+PROVIDER
+- provider ID
+- display name
+- protocol/adapter
+- API KEY ENV NAME
+- BASE URL ENV NAME
+- jumlah model
+- status
+
+MODEL
+- Hermes model ID
+- display name
+- provider ID
+- upstream model ID
+- enabled/disabled
+- status
+
+API key/value dan secret JANGAN ditampilkan.
+
+2. Audit khusus model yang sudah kita gunakan/siapkan:
+- GLM
+- DeepSeek
+- NVIDIA
+- provider lain yang memang sudah ada di project
+
+Jangan mengarang provider/model yang belum ada.
+
+3. Pastikan pemisahan berikut benar:
+
+PROVIDER ID
+≠
+HERMES MODEL ID
+≠
+UPSTREAM MODEL ID
+
+Contoh yang benar secara konsep:
+
+provider:
+nvidia
+
+Hermes model:
+glm-5.3-flash
+
+upstream model:
+zai-org/GLM-5.3-Flash
+
+Jangan memaksakan:
+cline/z-ai/glm-5.3-flash
+menjadi provider ID.
+
+4. Audit BASE_URL untuk SEMUA provider.
+
+Pastikan source code tidak memiliki operational hardcoded endpoint.
+
+Yang diizinkan:
+- nama ENV variable
+- config key
+- resolver
+
+Yang tidak diizinkan:
+- URL provider permanen sebagai fallback/default operasional di source.
+
+Contoh:
+
+NVIDIA_BASE_URL
+ZAI_BASE_URL
+DEEPSEEK_BASE_URL
+
+Nilai URL jangan ditampilkan jika berasal dari secret/config production yang sensitif; cukup tampilkan sumber ENV/config dan status resolusinya.
+
+5. Audit API KEY untuk SEMUA provider.
+
+Pastikan:
+- credential berasal dari ENV/config secret
+- tidak ada hardcoded key
+- tidak ada key di model registry
+- tidak ada key di log
+- tidak ada key di test fixture
+
+Hanya tampilkan nama ENV variable.
+
+6. Audit model catalog.
+
+Pastikan menambahkan model baru pada provider yang protocol-nya sudah didukung TIDAK membutuhkan:
+- perubahan Model Router
+- perubahan Telegram
+- perubahan Agent Core
+- pembuatan adapter baru
+- perubahan AI Agent Profile
+
+Jika ternyata masih ada bagian yang memerlukan coding, jelaskan tepat bagian mana dan kenapa.
+
+7. Audit Telegram `/model`.
+
+Pastikan `/model` benar-benar membaca provider/model dari registry baru.
+
+Pastikan:
+- provider muncul berdasarkan registry
+- model muncul berdasarkan provider
+- disabled model tidak muncul
+- manual selection tetap
+- fallback tetap disabled
+
+Jangan melakukan live inference.
+
+8. Audit AI Agent profile.
+
+Pastikan Muse, DeepSeek, GLM dan agent lain tidak memiliki daftar model hardcoded yang bertentangan dengan registry baru.
+
+Jika ada hardcoded model list:
+- jangan ubah dulu
+- laporkan file dan baris/komponen yang bermasalah.
+
+9. Audit backward compatibility.
+
+Pastikan model/provider lama yang memang masih valid tidak hilang akibat refactor.
+
+Jika ada alias seperti:
+cline/z-ai/glm-5.3-flash
+
+pastikan jelas apakah itu:
+- Hermes model ID
+- alias
+- upstream model ID
+
+Jangan mengubahnya dulu.
+
+10. Audit provider protocol.
+
+Kelompokkan:
+- OpenAI-compatible
+- protocol khusus
+- adapter custom
+
+Tujuannya mengetahui provider mana yang nantinya bisa ditambah model hanya lewat config.
+
+11. Jangan:
+- restart service
+- mengubah .env
+- mengubah API key
+- mengubah BASE_URL
+- live inference
+- commit
+- push
+
+12. Jalankan hanya pemeriksaan/read-only yang diperlukan.
+
+Jangan mengubah file.
+
+13. Laporan akhir WAJIB:
+
+A. PROVIDER CATALOG
+B. MODEL CATALOG
+C. BASE_URL ENV STATUS
+D. API KEY ENV STATUS
+E. TELEGRAM REGISTRY STATUS
+F. HARDCODED MODEL YANG DITEMUKAN
+G. HARDCODED BASE URL YANG DITEMUKAN
+H. PROVIDER YANG SUDAH BISA TAMBAH MODEL TANPA CODING
+I. MASALAH YANG DITEMUKAN
+J. REKOMENDASI LANGKAH BERIKUTNYA
+
+Pastikan laporan berdasarkan hasil audit repository sebenarnya.
+
+STATUS PERUBAHAN:
+Tidak ada perubahan.
+
+COMMIT:
+Tidak ada.
+
+PUSH:
+NO.
 ```
 # 
 ```
