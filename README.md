@@ -18,7 +18,292 @@
 ```
 # 
 ```
+[TASK] Add Muse Spark 1.3 Contributor model and simplify temporary learning integration
 
+Project:
+Hermes Agent
+
+GOAL:
+Tambahkan model Muse Spark 1.3 Contributor secara permanen ke konfigurasi/model registry Hermes untuk testing runtime.
+
+Model yang harus ditambahkan:
+
+Provider:
+nvidia-api
+
+Model ID:
+cline/meta/muse-spark-1.3-contributor
+
+Display Name:
+Muse Spark 1.3 Contributor
+
+Provider credentials:
+Gunakan ENV yang SUDAH dipakai provider nvidia-api:
+- NVIDIA_API_PROXY_BASE_URL
+- NVIDIA_API_PROXY_API_KEY
+
+JANGAN membuat provider baru.
+JANGAN membuat API key baru.
+JANGAN hardcode Base URL.
+JANGAN hardcode API key.
+
+IMPORTANT:
+Model GLM yang sudah berjalan harus tetap utuh:
+
+Provider:
+nvidia-api
+
+Model:
+cline/z-ai/glm-5.3-flash
+
+Jangan mengubah atau menghapus konfigurasi GLM.
+
+ARCHITECTURE RULES:
+1. Jangan mengubah Agent Core.
+2. Jangan membuat automatic model binding.
+3. Jangan membuat automatic fallback.
+4. Agent/model selection tetap manual seperti sekarang.
+5. Provider-scoped model identity tetap digunakan:
+   resolve model berdasarkan providerId + modelId.
+6. Jangan mengubah Telegram flow yang sudah berjalan.
+7. /model harus tetap bisa menampilkan GLM dan Muse jika enabled.
+8. Jangan membuat UI pada task ini.
+9. Jangan push ke GitHub.
+10. Jangan mengubah unrelated features.
+
+LEARNING ARCHITECTURE:
+Saat ini terdapat arsitektur learning/reference untuk Muse Spark 1.3.
+
+Untuk testing kali ini, JANGAN gunakan learning/reference architecture tersebut dalam runtime inference Muse.
+
+Tujuannya adalah menguji model inference secara langsung:
+
+Hermes
+→ provider nvidia-api
+→ NVIDIA_API_PROXY_BASE_URL
+→ nvidia-api proxy
+→ cline/meta/muse-spark-1.3-contributor
+
+Jangan membuat file learning baru.
+Jangan menjadikan file Muse Spark sebagai system prompt.
+Jangan menjalankan instruksi dari file learning.
+Jika existing learning integration hanya diperlukan untuk feature tersebut dan dapat dinonaktifkan tanpa merusak architecture umum Hermes, nonaktifkan/remove integrasi Muse-specific tersebut secara minimal.
+
+IMPORTANT:
+Jangan menghapus seluruh generic learning architecture Hermes jika masih digunakan feature lain.
+Hanya lepaskan dependency/integration Muse-specific yang tidak diperlukan untuk runtime test.
+
+IMPLEMENTATION STEPS:
+
+1. AUDIT DULU
+Cari:
+- ModelRegistry
+- provider registry/config
+- konfigurasi nvidia-api
+- model GLM cline/z-ai/glm-5.3-flash
+- konfigurasi Muse yang sudah ada
+- Muse learning/reference integration
+- Telegram /model implementation
+- runtime model resolver
+- test terkait provider/model
+
+Sebelum mengubah file, pahami architecture yang sudah ada.
+Jangan membuat registry/config baru jika registry existing sudah mendukungnya.
+
+2. ADD MUSE MODEL
+
+Tambahkan model:
+
+providerId:
+nvidia-api
+
+modelId:
+cline/meta/muse-spark-1.3-contributor
+
+displayName:
+Muse Spark 1.3 Contributor
+
+enabled:
+true
+
+protocol:
+gunakan protocol yang sama dengan model GLM/nvidia-api yang sudah terbukti bekerja.
+
+upstream model ID:
+cline/meta/muse-spark-1.3-contributor
+
+Pastikan model ID dikirim ke proxy EXACTLY:
+
+cline/meta/muse-spark-1.3-contributor
+
+Jangan mengubah menjadi:
+- meta/muse-spark-1.3-contributor
+- muse-spark-1.3-contributor
+- nvidia/muse-spark-1.3-contributor
+- provider lain
+
+3. PROVIDER
+
+Tetap gunakan:
+
+nvidia-api
+
+credentials:
+
+apiKeyEnv:
+NVIDIA_API_PROXY_API_KEY
+
+baseUrlEnv:
+NVIDIA_API_PROXY_BASE_URL
+
+Jangan mencetak secret value.
+
+4. TELEGRAM
+
+Pastikan /model dapat melihat:
+
+NVIDIA API Proxy
+├── GLM-5.3-Flash
+│   cline/z-ai/glm-5.3-flash
+│
+└── Muse Spark 1.3 Contributor
+    cline/meta/muse-spark-1.3-contributor
+
+Jangan mengubah behavior manual selection.
+
+5. TEST CONFIGURATION
+
+Tambahkan/update test yang memastikan:
+
+- nvidia-api provider exists
+- GLM model still exists
+- Muse model exists
+- Muse model is enabled
+- Muse model resolves using providerId + modelId
+- Muse uses NVIDIA_API_PROXY_BASE_URL
+- Muse uses NVIDIA_API_PROXY_API_KEY
+- exact model ID is preserved
+- no fallback is configured
+- no automatic binding is introduced
+
+6. RUNTIME SMOKE TEST
+
+Gunakan environment yang SUDAH ADA.
+
+Jangan tampilkan API key.
+
+Test request sederhana ke Muse.
+
+Contoh payload/message:
+
+"Reply with exactly: MUSE_PROXY_OK"
+
+Expected response:
+
+MUSE_PROXY_OK
+
+Pastikan request benar-benar melewati:
+
+Hermes
+→ nvidia-api
+→ NVIDIA_API_PROXY_BASE_URL
+→ nvidia-api proxy
+→ cline/meta/muse-spark-1.3-contributor
+
+Jika runtime gagal, JANGAN mengganti model ID secara spekulatif.
+Tampilkan error sebenarnya dan audit request/response.
+
+7. TELEGRAM TEST
+
+Jika service Telegram sedang aktif, lakukan test melalui flow existing:
+
+/model
+→ NVIDIA API Proxy
+→ Muse Spark 1.3 Contributor
+
+Kemudian kirim:
+
+Halo Muse, balas tepat dengan: MUSE_TELEGRAM_OK
+
+Expected:
+
+MUSE_TELEGRAM_OK
+
+Jangan melakukan perubahan Telegram architecture hanya untuk test.
+
+8. LEARNING CHECK
+
+Pastikan runtime Muse TIDAK otomatis membaca:
+
+ai/learning/sources/temporary/muse-spark-1.3.md
+
+sebagai system instruction atau prompt model.
+
+File tersebut tidak boleh mempengaruhi smoke test.
+
+Jangan menghapus generic learning subsystem Hermes jika tidak diperlukan.
+Jika ada Muse-specific hook yang mengganggu runtime inference, remove/disable hanya hook tersebut.
+
+9. FULL VALIDATION
+
+Jalankan:
+
+- relevant unit tests
+- integration tests
+- typecheck
+- lint
+- format check
+- security/secret scan
+- existing test suite
+
+Target:
+
+0 failed
+
+Existing skipped tests boleh tetap skipped jika memang baseline.
+
+10. AUDIT FINAL
+
+Tampilkan ringkasan:
+
+A. Files changed
+B. Muse model configuration
+C. Provider configuration
+D. GLM configuration verification
+E. Learning integration yang dihapus/dinonaktifkan
+F. Test results
+G. Runtime smoke-test result
+H. Telegram test result jika dilakukan
+I. Git status
+J. Current commit
+K. Confirm bahwa BELUM push
+
+SECURITY:
+- Jangan print API key.
+- Jangan print token Telegram.
+- Jangan memasukkan secret ke source code.
+- Jangan commit .env.
+- Jangan mengubah permission .env.
+- Jangan membuat credential baru.
+
+GIT:
+Jangan git push.
+Jangan membuat commit otomatis jika workflow project saat ini biasanya menunggu approval saya.
+
+Jika project workflow memang mengharuskan commit untuk menyimpan perubahan, buat commit lokal saja dengan pesan:
+
+feat: add muse spark contributor model
+
+Tetapi JANGAN PUSH.
+
+IMPORTANT FINAL RULE:
+Jangan melakukan pekerjaan lain di luar task ini.
+Jangan membuat UI.
+Jangan membuat automatic fallback.
+Jangan membuat automatic model binding.
+Jangan mengubah GLM.
+Jangan mengubah provider nvidia-api.
+Fokus hanya membuat Muse bisa dipilih dan diuji sebagai model inference langsung.
 ```
 # 
 ```
