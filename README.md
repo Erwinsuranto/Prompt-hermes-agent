@@ -66,7 +66,337 @@
 ```
 # 
 ```
+HERMES — DEBUG TELEGRAM MESSAGE → LIVE INFERENCE
+=================================================
 
+Kondisi:
+
+Telegram bot ONLINE.
+Agent selection berhasil.
+
+Telegram menunjukkan:
+
+Agent: GLM AI
+Model: cline/z-ai/glm-5.3-flash
+Provider: glm-5.3
+Mode: Manual selection
+Fallback: Disabled
+
+Tetapi setelah user mengirim pesan biasa seperti:
+
+"Hello"
+
+tidak ada response.
+
+JANGAN mengubah UI.
+JANGAN membuat provider baru.
+JANGAN membuat model baru.
+JANGAN hardcode model.
+JANGAN membuat fallback.
+JANGAN automatic switching.
+JANGAN mengubah database schema.
+JANGAN mengubah frontend.
+JANGAN menampilkan API key/BOT token.
+JANGAN push.
+
+
+1. TRACE PESAN TELEGRAM
+-----------------------
+
+Telusuri request nyata:
+
+Telegram update
+→ message handler
+→ session
+→ active_agent_id
+→ active_model_id
+→ Agent Registry
+→ Model Router
+→ provider resolver
+→ GLM provider
+→ HTTP request
+→ response
+→ Telegram sendMessage
+
+Tentukan titik tepat dimana request berhenti.
+
+
+2. SESSION
+----------
+
+Periksa session user yang sudah memilih:
+
+active_agent_id
+active_model_id
+
+Tampilkan hanya ID yang aman/non-secret.
+
+Pastikan setelah:
+
+/agent → GLM
+/model → cline/z-ai/glm-5.3-flash
+
+pesan biasa benar-benar membaca session yang sama.
+
+Jika active_model_id hilang setelah callback /model:
+PERBAIKI ROOT CAUSE.
+
+
+3. AGENT PROFILE
+----------------
+
+Pastikan agent:
+
+glm
+
+berhasil di-resolve.
+
+Pastikan profile GLM dapat digunakan untuk chat.
+
+Jangan mengubah profile jika tidak diperlukan.
+
+
+4. MODEL ROUTER
+---------------
+
+Pastikan Model Router menerima:
+
+agent = glm
+model = cline/z-ai/glm-5.3-flash
+
+Jangan memilih model lain.
+
+Jangan fallback.
+
+Tambahkan logging diagnostik yang aman jika diperlukan:
+
+agent resolved
+model resolved
+provider resolved
+request started
+response received
+
+Jangan log:
+- API key
+- BOT token
+- Authorization header
+- request secret
+
+
+5. PROVIDER
+-----------
+
+Periksa provider:
+
+glm-5.3
+
+Pastikan provider benar-benar dapat melakukan chat completion.
+
+Periksa:
+
+- base URL
+- API key loaded
+- endpoint
+- model ID
+- HTTP method
+- headers
+- request body
+- timeout
+
+Semua credential harus tetap redacted.
+
+
+6. SYSTEMD ENVIRONMENT
+----------------------
+
+Pastikan environment yang dipakai:
+
+hermes-agent.service
+
+sama dengan environment yang dipakai runtime.
+
+Jangan hanya mengecek interactive shell.
+
+Tampilkan:
+
+GLM_BASE_URL = SET/NOT SET
+GLM_API_KEY = SET/NOT SET
+
+Jangan tampilkan value.
+
+
+7. SAFE LIVE TEST
+-----------------
+
+Jika konfigurasi provider sudah valid, jalankan satu smoke test langsung melalui existing Model Router:
+
+Agent:
+glm
+
+Model:
+cline/z-ai/glm-5.3-flash
+
+Prompt:
+
+Reply with exactly: GLM_RUNTIME_OK
+
+Jangan menggunakan tools.
+Jangan melakukan side effect.
+Jangan menulis memory.
+
+Jika gagal:
+laporkan HTTP status/error classification secara sanitized.
+
+Jangan menyatakan sukses jika tidak menerima response.
+
+
+8. TELEGRAM SEND RESPONSE
+--------------------------
+
+Jika provider berhasil tetapi Telegram tidak membalas:
+
+audit bagian:
+
+response
+→ Telegram sendMessage
+
+Periksa:
+
+- chat_id
+- response extraction
+- empty response handling
+- Telegram API error
+- timeout
+- message length handling
+
+Jangan mengirim response ke chat lain.
+
+
+9. CALLBACK VS NORMAL MESSAGE
+-----------------------------
+
+Pastikan callback `/model` hanya mengubah session.
+
+Setelah callback selesai, normal text message tetap masuk ke inference handler.
+
+Jangan membuat callback handler mengambil alih seluruh message routing.
+
+
+10. FIX
+-------
+
+Perbaiki hanya root cause.
+
+Jangan membuat workaround palsu.
+
+Jangan mengubah architecture Hermes.
+
+
+11. SERVICE
+-----------
+
+Jika code/config diperbaiki:
+
+restart hanya:
+
+hermes-agent.service
+
+Pastikan:
+
+active (running)
+
+Kemudian:
+
+/health
+/ready
+
+
+12. TEST
+--------
+
+Jalankan:
+
+- full test
+- typecheck
+- lint
+- format
+- security
+- secret scan
+
+Jangan mengubah Muse Spark.
+
+SHA wajib:
+
+4c1030c406c5b315cf95cf493c781658d2bb58103821fb6d47181c78e9186d13
+
+
+13. GIT
+-------
+
+Tampilkan:
+
+git status --short
+git diff --stat
+
+Jika perubahan code diperlukan dan semua quality gates PASS:
+
+commit:
+
+fix: restore telegram live inference routing
+
+Jangan push.
+
+
+FINAL REPORT
+------------
+
+Telegram:
+- bot:
+- message handler:
+- callback handler:
+- session:
+
+Agent:
+- glm:
+
+Model:
+- cline/z-ai/glm-5.3-flash:
+
+Provider:
+- glm-5.3:
+
+Routing:
+- agent:
+- model:
+- provider:
+
+Live smoke:
+PASS / FAIL
+
+Telegram response:
+PASS / FAIL
+
+ROOT CAUSE:
+<penyebab sebenarnya>
+
+Security:
+- secret scan:
+- credential leakage:
+
+Tests:
+Typecheck:
+Lint:
+Format:
+Security:
+
+Muse Spark:
+UNCHANGED
+
+Git:
+Commit:
+Push: NO
+
+Berhenti setelah laporan.
 ```
 # 
 ```
