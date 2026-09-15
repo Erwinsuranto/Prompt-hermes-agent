@@ -74,7 +74,371 @@
 ```
 # 
 ```
+HERMES — FIX PRODUCTION RUNTIME REGISTRY DISCOVERY
+===================================================
 
+Kondisi saat ini:
+
+Telegram bot ONLINE dan bisa menerima command.
+
+Tetapi dari Telegram:
+
+/agent
+→ "No agents are registered."
+
+/model
+→ "No providers with active models are available."
+
+Ini menunjukkan Telegram runtime hidup, tetapi registry yang dipakai oleh production service tidak menemukan Agent Registry dan/atau Model Registry.
+
+JANGAN membuat data dummy.
+JANGAN hardcode Muse/DeepSeek/GLM ke Telegram handler.
+JANGAN membuat provider dummy.
+JANGAN membuat model dummy.
+JANGAN menjalankan live inference dulu.
+
+Gunakan architecture registry yang sudah ada.
+
+
+STEP 1 — AUDIT PRODUCTION RUNTIME
+---------------------------------
+
+Audit bagaimana `hermes-agent.service` dijalankan:
+
+- WorkingDirectory
+- ExecStart
+- Environment
+- NODE_ENV
+- environment loader
+- process user
+- filesystem permissions
+
+Pastikan service berjalan dari repository Hermes yang benar:
+
+/root/hermes-agent
+
+
+STEP 2 — AUDIT AGENT REGISTRY
+-----------------------------
+
+Cari implementation Agent Registry / AI Registry / Agent Profile loader.
+
+Pastikan production runtime dapat menemukan:
+
+ai/agents/muse/agent.md
+ai/agents/deepseek/agent.md
+ai/agents/glm/agent.md
+
+Jangan mengubah isi profile.
+
+Jangan membuat profile baru.
+
+Jangan copy profile ke lokasi lain tanpa alasan arsitektural.
+
+Periksa apakah discovery root/path production berbeda dari development/test.
+
+Periksa:
+
+- relative path
+- process.cwd()
+- configured root
+- environment variable
+- permission
+- symlink
+- filesystem case sensitivity
+
+
+STEP 3 — AUDIT MODEL REGISTRY
+-----------------------------
+
+Cari implementation Model Registry dan provider registry.
+
+Cari kenapa production mengatakan:
+
+"No providers with active models are available."
+
+Periksa apakah:
+
+- Model Registry kosong
+- provider registry kosong
+- provider disabled
+- models disabled
+- configuration hanya tersedia pada test fixture
+- production registry memakai path yang salah
+- environment/config belum tersedia
+- registry hanya di-seed dalam test
+- provider metadata tidak terbaca
+
+Jangan mengarang provider/model.
+
+Gunakan data/configuration existing.
+
+
+STEP 4 — DISTINGUISH REGISTRY VS CREDENTIAL
+--------------------------------------------
+
+PENTING:
+
+API key/provider credential bukan alasan untuk menghilangkan model dari registry.
+
+Model Registry tetap harus dapat menampilkan model yang terdaftar meskipun credential provider belum tersedia.
+
+Status provider/model harus dibedakan:
+
+REGISTERED
+AVAILABLE
+DISABLED
+CREDENTIAL_MISSING
+
+Jangan membuat provider terlihat AVAILABLE hanya karena API key ada.
+
+Jangan menyembunyikan seluruh registry hanya karena credential belum tersedia.
+
+
+STEP 5 — COMPARE TEST VS PRODUCTION
+-----------------------------------
+
+Bandingkan registry pada:
+
+A. test environment
+B. local/dev runtime
+C. hermes-agent.service production runtime
+
+Cari perbedaan yang menyebabkan:
+
+test:
+Agent Registry ditemukan
+
+production:
+No agents registered
+
+dan:
+
+test:
+Model Registry ditemukan
+
+production:
+No active providers/models
+
+
+STEP 6 — FIX ROOT CAUSE
+-----------------------
+
+Perbaiki hanya root cause.
+
+Prioritas:
+
+1. runtime path
+2. environment/config
+3. registry initialization
+4. production filesystem access
+5. service working directory
+6. build/runtime asset inclusion
+
+Jangan mengubah architecture registry.
+
+Jangan bypass registry.
+
+Jangan hardcode agent/model ke Telegram.
+
+
+STEP 7 — BUILD ASSETS
+---------------------
+
+Jika agent.md atau registry data tidak ikut tersedia pada production build:
+
+perbaiki build/package mechanism agar required registry assets tersedia.
+
+Pastikan:
+
+ai/agents/muse/agent.md
+ai/agents/deepseek/agent.md
+ai/agents/glm/agent.md
+
+tersedia dan dapat dibaca oleh service.
+
+Jangan memasukkan `.env` atau secret ke build.
+
+
+STEP 8 — TELEGRAM
+-----------------
+
+Setelah root cause diperbaiki, pastikan Telegram memakai registry yang sama.
+
+Expected:
+
+/agent
+
+→ Muse
+→ DeepSeek
+→ GLM
+
+atau agent aktif lain yang memang terdaftar.
+
+Dan:
+
+/model
+
+→ provider yang memang registered
+→ model yang memang registered/active
+
+
+STEP 9 — SECURITY
+-----------------
+
+Pastikan registry tidak dapat membaca:
+
+- /etc
+- /root file lain
+- arbitrary path
+- .env sebagai model/profile
+- secret files
+
+Tetap gunakan boundary existing.
+
+
+STEP 10 — TEST
+--------------
+
+Tambahkan/perbaiki test untuk memastikan production-style runtime discovery.
+
+Test minimal:
+
+1. Muse discovery
+2. DeepSeek discovery
+3. GLM discovery
+4. Model Registry discovery
+5. provider discovery
+6. disabled provider handling
+7. disabled model handling
+8. missing credential status
+9. wrong working directory handling
+10. production build asset availability
+11. Telegram /agent
+12. Telegram /model
+13. user/session isolation
+
+Jangan menjalankan live inference.
+
+
+STEP 11 — QUALITY GATES
+-----------------------
+
+Jalankan:
+
+- full test
+- typecheck
+- lint
+- format
+- security
+- secret scan
+
+Jangan mengubah frontend.
+
+
+STEP 12 — SERVICE
+-----------------
+
+Jika perubahan sudah selesai:
+
+restart hanya:
+
+hermes-agent.service
+
+Lalu verify:
+
+systemctl status hermes-agent
+
+/health
+/ready
+
+
+STEP 13 — TELEGRAM VERIFICATION
+------------------------------
+
+Jangan mengarang hasil Telegram.
+
+Jika runtime registry sudah benar, cukup nyatakan:
+
+Telegram is ready for manual verification.
+
+Jangan melakukan inference otomatis.
+
+
+STEP 14 — MUSE SPARK
+--------------------
+
+Jangan mengubah:
+
+ai/learning/sources/temporary/muse-spark-1.3.md
+
+SHA wajib tetap:
+
+4c1030c406c5b315cf95cf493c781658d2bb58103821fb6d47181c78e9186d13
+
+
+STEP 15 — GIT
+------------
+
+Tampilkan:
+
+git status --short
+git diff --stat
+
+Jika perubahan kode diperlukan dan seluruh quality gates lulus:
+
+commit:
+
+fix: restore production registry discovery
+
+Jangan push.
+
+
+FINAL REPORT
+------------
+
+ROOT CAUSE:
+<jelaskan penyebab sebenarnya>
+
+Agent Registry:
+- Muse:
+- DeepSeek:
+- GLM:
+
+Model Registry:
+- providers:
+- active models:
+
+Production runtime:
+- working directory:
+- registry path:
+- assets:
+
+Telegram:
+- /agent:
+- /model:
+
+Health:
+Ready:
+
+Tests:
+Typecheck:
+Lint:
+Format:
+Security:
+Secret scan:
+
+Muse Spark SHA:
+UNCHANGED
+
+Git:
+Commit:
+Push: NO
+
+Live inference:
+NOT RUN
+
+Berhenti setelah laporan.
 ```
 # 
 ```
