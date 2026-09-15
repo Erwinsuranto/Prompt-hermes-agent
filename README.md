@@ -86,7 +86,174 @@
 ```
 # 
 ```
+HERMES — FIX TELEGRAM BOT ENV CONFIGURATION
+============================================
 
+Masalah:
+Telegram masih:
+
+TELEGRAM BLOCKED — WAITING FOR CONFIGURATION
+
+User sudah memiliki Telegram bot token dan sudah menaruh token tersebut di baris paling bawah:
+
+/root/hermes-agent/.env
+
+Sekarang audit konfigurasi dan perbaiki nama environment variable agar sesuai dengan source code Hermes.
+
+PENTING:
+- JANGAN tampilkan token.
+- JANGAN membaca/menampilkan VALUE token.
+- JANGAN meminta user mengirim token ke terminal output.
+- JANGAN mencetak isi .env.
+- Jangan membuat bot baru.
+- Jangan membuat token baru.
+- Jangan mengubah Telegram bot token value.
+- Jangan mengubah database.
+- Jangan mengubah DNS.
+- Jangan mengubah Caddy.
+- Jangan push.
+
+
+STEP 1 — AUDIT SOURCE CODE
+--------------------------
+
+Cari di seluruh source code Hermes:
+
+- process.env.*
+- env schema
+- configuration loader
+- Telegram bot configuration
+- Telegram service
+- Telegram Agent
+
+Identifikasi NAMA VARIABLE yang benar-benar dibaca oleh Hermes untuk Telegram bot token.
+
+Contoh kemungkinan:
+
+HERMES_TELEGRAM_BOT_TOKEN
+TELEGRAM_BOT_TOKEN
+BOT_TOKEN
+
+Jangan berasumsi.
+Gunakan hasil source code.
+
+
+STEP 2 — AUDIT .ENV
+-------------------
+
+Periksa hanya keberadaan variable.
+
+Tampilkan:
+
+VARIABLE_NAME = SET / NOT SET
+
+Jangan tampilkan value.
+
+Jika variable yang benar belum ada tetapi ada variable Telegram lain yang kemungkinan salah nama:
+
+jangan hapus token.
+
+Rename/migrasikan variable hanya jika aman dan benar-benar diperlukan berdasarkan source code.
+
+Pertahankan nilai token yang sudah dimiliki user.
+
+
+STEP 3 — ENABLE TELEGRAM
+------------------------
+
+Pastikan production environment memiliki:
+
+HERMES_TELEGRAM_ENABLED=true
+
+dan variable token dengan nama yang benar menurut source code.
+
+Jangan membuat duplicate configuration yang membingungkan.
+
+
+STEP 4 — SECURITY
+-----------------
+
+Pastikan:
+
+- .env permission aman
+- .env masuk .gitignore
+- token tidak tracked Git
+- token tidak muncul di git diff
+- token tidak muncul di logs
+- token tidak muncul di error response
+
+
+STEP 5 — RESTART
+----------------
+
+Setelah konfigurasi benar:
+
+restart hanya:
+
+hermes-agent.service
+
+Jangan restart service lain.
+
+
+STEP 6 — VERIFY
+---------------
+
+Periksa:
+
+systemctl status hermes-agent
+
+/health
+
+/ready
+
+Telegram runtime.
+
+Pastikan bot Telegram berhasil initialize.
+
+Jangan menjalankan live AI inference dulu.
+
+
+STEP 7 — TELEGRAM STATUS
+------------------------
+
+Tampilkan:
+
+Telegram enabled:
+Telegram token variable:
+Telegram token status:
+Telegram handler:
+Telegram runtime:
+Bot initialization:
+
+Jangan tampilkan token.
+
+
+STEP 8 — GIT
+------------
+
+Tampilkan:
+
+git status --short
+
+Pastikan .env tidak muncul sebagai file yang akan di-commit.
+
+Jangan push.
+
+
+FINAL RESULT
+------------
+
+Jika bot berhasil initialize:
+
+TELEGRAM BOT ONLINE — READY FOR MANUAL TEST
+
+Jika masih gagal:
+
+TELEGRAM BLOCKED
+
+dan jelaskan alasan TANPA membocorkan secret.
+
+Tidak ada live AI inference pada tahap ini.
 ```
 
 # 
