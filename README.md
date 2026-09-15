@@ -10,7 +10,286 @@
 ```
 # 
 ```
+HERMES — ENABLE TELEGRAM PRODUCTION & LIVE BOT VERIFICATION
+=============================================================
 
+Phase 27 sudah lulus:
+- 1624 passed
+- 6 skipped
+- 0 failed
+- typecheck/lint/format/security PASS
+
+Sekarang aktifkan Telegram Agent untuk production agar kita dapat melakukan test nyata.
+
+PENTING:
+- Jangan mengubah kode Phase 27.
+- Jangan membuat Telegram bot baru.
+- Gunakan bot/token yang sudah dikonfigurasi untuk Hermes jika tersedia.
+- Jangan menampilkan BOT_TOKEN.
+- Jangan menampilkan API key.
+- Jangan menampilkan secret.
+- Jangan mengubah database schema.
+- Jangan mengubah DNS.
+- Jangan mematikan service lain.
+- Jangan git push.
+- Jangan menjalankan inference otomatis sebelum Telegram benar-benar aktif.
+
+
+STEP 1 — AUDIT TELEGRAM CONFIG
+------------------------------
+
+Periksa configuration Hermes.
+
+Tampilkan hanya:
+
+HERMES_TELEGRAM_ENABLED = SET/NOT SET
+TELEGRAM_BOT_TOKEN = SET/NOT SET
+TELEGRAM configuration status = READY/BLOCKED
+
+Jangan pernah menampilkan nilai token.
+
+Jika bot token belum tersedia:
+STOP dan laporkan variable yang diperlukan tanpa meminta user mengirim token ke chat.
+
+
+STEP 2 — ENABLE TELEGRAM
+------------------------
+
+Jika token sudah tersedia:
+
+ubah production environment sehingga:
+
+HERMES_TELEGRAM_ENABLED=true
+
+Pertahankan token yang sudah ada.
+
+Jangan mencetak .env.
+
+Pastikan .env tidak tracked Git.
+
+
+STEP 3 — RESTART HERMES
+-----------------------
+
+Restart hanya:
+
+hermes-agent.service
+
+Jangan restart service lain.
+
+Tunggu sampai:
+
+active (running)
+
+
+STEP 4 — VERIFY TELEGRAM
+------------------------
+
+Verifikasi Telegram bot melalui existing Telegram integration.
+
+Pastikan:
+
+- bot process/handler aktif
+- polling/webhook sesuai architecture existing
+- tidak ada crash loop
+- tidak ada authentication error
+- tidak ada token leakage pada logs
+
+Jangan mengubah webhook/polling architecture jika existing implementation sudah benar.
+
+
+STEP 5 — VERIFY HERMES
+----------------------
+
+Test:
+
+/health
+/ready
+
+Pastikan tetap:
+
+HTTP 200
+database READY
+
+
+STEP 6 — TELEGRAM COMMAND TEST
+------------------------------
+
+Setelah bot aktif, siapkan test manual berikut:
+
+/start
+
+/agent
+
+/model
+
+Jangan mensimulasikan hasil Telegram.
+
+Jika testing dari server hanya dapat memverifikasi service:
+tampilkan bahwa interaksi user harus dilakukan dari Telegram client.
+
+
+STEP 7 — MODEL MENU
+-------------------
+
+Pastikan /model membaca Model Registry.
+
+Flow harus:
+
+/model
+→ provider
+→ model
+→ pilih model
+→ session menyimpan active_model_id
+
+Pastikan /agent:
+
+/agent
+→ Muse / DeepSeek / GLM
+→ session menyimpan active_agent_id
+
+Pastikan user/session isolation.
+
+
+STEP 8 — LIVE INFERENCE
+-----------------------
+
+JANGAN menjalankan live inference otomatis dari server.
+
+Setelah bot aktif, berikan instruksi test manual kepada USER:
+
+1. Buka Telegram.
+2. Buka bot Hermes.
+3. Kirim:
+
+/agent
+
+4. Pilih:
+
+Muse
+
+5. Kirim:
+
+/model
+
+6. Pilih provider yang tersedia.
+7. Pilih satu model secara manual.
+8. Kirim:
+
+Reply with exactly: HERMES_MUSE_OK
+
+Expected:
+
+Hermes membalas menggunakan:
+Agent = Muse
+Model = model yang dipilih user
+
+Tidak boleh fallback.
+
+
+STEP 9 — LOG VERIFICATION
+-------------------------
+
+Setelah user melakukan test manual, log boleh diperiksa untuk memastikan:
+
+- request diterima
+- agent resolved
+- explicit model resolved
+- Model Router dipanggil
+- provider dipanggil
+- response diterima
+
+Jangan menampilkan:
+- API key
+- bot token
+- authorization header
+- credential
+
+
+STEP 10 — SECURITY
+------------------
+
+Pastikan:
+
+- hanya user/session yang benar dapat mengubah modelnya
+- callback keyboard tidak dapat dipakai user lain
+- model selection tidak memberikan permission
+- agent selection tidak memberikan permission
+- model response tidak dieksekusi sebagai command
+- no automatic fallback
+- no automatic model switching
+
+
+STEP 11 — GIT
+------------
+
+Jangan push.
+
+Tampilkan:
+
+git status
+git diff --stat
+
+Jangan commit perubahan environment secret.
+
+Jika perubahan kode TIDAK diperlukan:
+jangan membuat commit baru.
+
+Jika perubahan kode memang diperlukan untuk memperbaiki bug:
+jelaskan dahulu perubahan tersebut.
+
+
+FINAL REPORT
+------------
+
+TELEGRAM PRODUCTION
+
+Enabled:
+Bot:
+Service:
+Health:
+Ready:
+
+Telegram runtime:
+- handler:
+- polling/webhook:
+- status:
+
+Commands:
+- /start:
+- /agent:
+- /model:
+
+Agent selection:
+- Muse:
+- DeepSeek:
+- GLM:
+
+Model selection:
+- manual:
+- registry:
+- fallback:
+
+Live inference:
+- status:
+
+Security:
+- secret scan:
+- token protected:
+
+Git:
+- status:
+- push: NO
+
+FINAL STATUS:
+
+Jika bot aktif:
+TELEGRAM BOT ONLINE — READY FOR MANUAL LIVE TEST
+
+Jika token/config belum tersedia:
+TELEGRAM BLOCKED — WAITING FOR CONFIGURATION
+
+Jangan mengarang hasil live inference.
 ```
 # 
 ```
