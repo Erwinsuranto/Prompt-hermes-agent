@@ -70,7 +70,393 @@
 ```
 # 
 ```
+HERMES — DEBUG & FIX GLM LIVE INFERENCE CONNECTION
+===================================================
 
+Kondisi saat ini:
+
+Telegram /model SUDAH BERHASIL.
+
+Model yang tampil:
+
+cline/z-ai/glm-5.3-flash
+status: available
+capabilities:
+- chat
+- tool-calls
+- json-mode
+- streaming
+
+Tetapi saat model dipilih, inference belum berhasil terkoneksi.
+
+JANGAN mengubah UI /model.
+JANGAN membuat provider baru jika provider GLM existing sudah ada.
+JANGAN membuat model dummy.
+JANGAN membuat fallback otomatis.
+JANGAN mengganti model otomatis.
+JANGAN menampilkan API key.
+JANGAN menampilkan BOT TOKEN.
+JANGAN mengubah frontend.
+JANGAN push.
+
+
+STEP 1 — TRACE RUNTIME
+----------------------
+
+Trace request nyata dari:
+
+Telegram message
+→ active agent
+→ active model
+→ Model Router
+→ provider resolver
+→ GLM provider
+→ HTTP request
+→ response
+
+Cari titik tepat dimana koneksi gagal.
+
+Jangan hanya mengatakan "provider unavailable".
+
+Tentukan root cause sebenarnya.
+
+
+STEP 2 — AUDIT GLM CONFIG
+-------------------------
+
+Cari seluruh konfigurasi GLM yang dibaca runtime.
+
+Identifikasi nama environment variable berdasarkan source code, bukan asumsi.
+
+Periksa keberadaan:
+
+- GLM base URL
+- GLM API key
+- GLM model configuration
+
+Tampilkan hanya:
+
+GLM_BASE_URL = SET / NOT SET
+GLM_API_KEY = SET / NOT SET
+GLM_PROVIDER = ENABLED / DISABLED
+MODEL = REGISTERED / NOT REGISTERED
+
+JANGAN tampilkan value API key.
+
+JANGAN tampilkan value secret.
+
+
+STEP 3 — BASE URL
+-----------------
+
+Pastikan base URL GLM benar-benar digunakan oleh provider runtime.
+
+Periksa:
+
+- trailing slash
+- path `/v1` jika memang diperlukan provider implementation
+- URL normalization
+- HTTP/HTTPS
+- timeout
+- endpoint chat completion yang digunakan provider
+
+Jangan mengarang URL.
+
+Gunakan base URL yang memang sudah dikonfigurasi/user berikan atau yang diwajibkan oleh existing provider implementation.
+
+
+STEP 4 — API KEY
+----------------
+
+Pastikan API key dibaca oleh proses:
+
+hermes-agent.service
+
+Bukan hanya tersedia di interactive shell.
+
+Bandingkan:
+
+interactive environment
+vs
+systemd environment
+
+tanpa mencetak secret.
+
+Jika .env digunakan:
+pastikan service benar-benar memuat .env sesuai architecture existing.
+
+Jangan memasukkan secret ke source code.
+
+
+STEP 5 — PROVIDER STATUS
+------------------------
+
+Periksa mengapa:
+
+cline/z-ai/glm-5.3-flash
+
+ditampilkan:
+
+available
+
+tetapi inference tidak konek.
+
+Status registry harus membedakan:
+
+REGISTERED
+AVAILABLE
+CREDENTIAL_MISSING
+PROVIDER_ERROR
+DISABLED
+
+Jangan menyebut AVAILABLE jika credential/runtime provider sebenarnya tidak siap.
+
+Namun jangan menyembunyikan model dari registry hanya karena credential missing.
+
+
+STEP 6 — SAFE CONNECTIVITY TEST
+-------------------------------
+
+Lakukan connectivity test ke GLM provider jika aman.
+
+Gunakan:
+
+- configured base URL
+- configured credential
+
+Tetapi jangan pernah mencetak credential.
+
+Gunakan prompt sangat pendek.
+
+Jangan menggunakan tools.
+Jangan melakukan side effect.
+Jangan menulis memory.
+Jangan mengubah data user.
+
+Expected test:
+
+Reply with exactly:
+GLM_RUNTIME_OK
+
+Jika provider berhasil:
+
+HTTP/provider success harus terverifikasi.
+
+Jika gagal, tampilkan:
+
+- HTTP status
+- sanitized error message
+- provider error type
+- timeout/DNS/TLS/auth classification
+
+Jangan tampilkan Authorization header atau API key.
+
+
+STEP 7 — MODEL ID
+-----------------
+
+Pastikan model ID:
+
+cline/z-ai/glm-5.3-flash
+
+benar-benar diteruskan ke provider.
+
+Jangan mengubah menjadi model lain.
+
+Jangan fallback.
+
+Pastikan Model Router menerima explicit model ID dari session.
+
+
+STEP 8 — TELEGRAM SESSION
+-------------------------
+
+Periksa session setelah user memilih:
+
+Agent:
+<selected agent>
+
+Model:
+cline/z-ai/glm-5.3-flash
+
+Pastikan active_model_id benar-benar tersimpan.
+
+Pastikan request chat berikutnya menggunakan session tersebut.
+
+
+STEP 9 — FIX
+------------
+
+Perbaiki hanya root cause.
+
+Kemungkinan root cause yang harus diperiksa:
+
+- env tidak masuk systemd
+- nama env salah
+- base URL tidak dibaca
+- API key tidak dibaca service
+- provider disabled
+- provider resolver salah
+- model ID mismatch
+- endpoint mismatch
+- authentication error
+- timeout
+- DNS/TLS
+- Model Router tidak meneruskan explicit model
+- Telegram session tidak membawa active_model_id
+
+Jangan menambah workaround palsu.
+
+
+STEP 10 — SERVICE
+-----------------
+
+Jika perubahan configuration/code diperlukan:
+
+restart hanya:
+
+hermes-agent.service
+
+Pastikan:
+
+active (running)
+
+Kemudian:
+
+/health
+/ready
+
+
+STEP 11 — LIVE TEST
+-------------------
+
+Setelah root cause diperbaiki, lakukan satu live smoke test aman:
+
+Agent:
+Muse
+
+atau agent yang sedang dipilih user.
+
+Model:
+cline/z-ai/glm-5.3-flash
+
+Prompt:
+
+Reply with exactly: GLM_RUNTIME_OK
+
+Jika berhasil, laporkan hasil sebenarnya.
+
+Jika gagal, jangan menyebut success.
+
+
+STEP 12 — TELEGRAM MANUAL TEST
+------------------------------
+
+Setelah server-side verification selesai:
+
+User akan mengirim dari Telegram:
+
+Reply with exactly: GLM_RUNTIME_OK
+
+Pastikan response berasal dari provider GLM yang dipilih.
+
+Jangan fallback ke model lain.
+
+
+STEP 13 — SECURITY
+------------------
+
+Pastikan tidak ada:
+
+- API key pada logs
+- BOT token pada logs
+- Authorization header pada logs
+- secret pada error response
+- credential pada Git
+- credential pada frontend
+
+
+STEP 14 — REGRESSION
+--------------------
+
+Jalankan:
+
+- full tests
+- typecheck
+- lint
+- format
+- security
+- secret scan
+
+Jangan mengubah Muse Spark source.
+
+SHA wajib tetap:
+
+4c1030c406c5b315cf95cf493c781658d2bb58103821fb6d47181c78e9186d13
+
+
+STEP 15 — GIT
+------------
+
+Tampilkan:
+
+git status --short
+git diff --stat
+
+Jika perubahan kode memang diperlukan dan semua quality gates lulus:
+
+commit:
+
+fix: restore glm runtime inference
+
+Jangan push.
+
+
+FINAL REPORT
+------------
+
+GLM RUNTIME
+
+Provider:
+Model:
+Base URL:
+API key:
+Service:
+
+Registry:
+Model Router:
+Session model:
+
+Connectivity:
+HTTP/provider status:
+
+Live smoke test:
+PASS / FAIL
+
+Error root cause:
+<jelaskan>
+
+Telegram:
+READY / BLOCKED
+
+Security:
+Secret scan:
+Credential leakage:
+
+Tests:
+Typecheck:
+Lint:
+Format:
+Security:
+
+Muse Spark SHA:
+UNCHANGED
+
+Git:
+Commit:
+Push: NO
+
+Berhenti setelah laporan.
 ```
 # 
 ```
