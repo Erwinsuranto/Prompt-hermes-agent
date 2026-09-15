@@ -50,7 +50,283 @@
 ```
 # 
 ```
+REFactor GLOBAL: buat sistem Provider + Model Configuration Hermes menjadi mudah dikonfigurasi seperti konsep config OpenCode.
 
+TUJUAN UTAMA:
+Setelah refactor ini:
+1. Menambah MODEL baru tidak perlu coding.
+2. Mengubah BASE_URL provider tidak perlu coding.
+3. API key tidak boleh hardcoded.
+4. Provider dan Model harus dipisahkan.
+5. Agent Core, AI Registry, Model Router, Telegram, dan modul lain menggunakan registry/config yang sama.
+6. Tidak ada automatic model binding.
+7. Tidak ada automatic fallback.
+8. Jangan mengubah fitur yang tidak berkaitan.
+
+KONSEP YANG DIINGINKAN:
+
+Provider:
+- provider ID
+- display name
+- credential environment variable
+- base URL environment variable
+- protocol/adapter
+- daftar models
+
+Model:
+- model ID Hermes
+- display name
+- upstream model ID
+- provider
+- enabled/status
+- metadata/capabilities bila memang diperlukan
+
+CONTOH KONSEP:
+
+provider:
+  nvidia:
+    name: NVIDIA
+    apiKeyEnv: NVIDIA_API_KEY
+    baseUrlEnv: NVIDIA_BASE_URL
+    protocol: openai-compatible
+    models:
+      glm-5.3-flash:
+        name: GLM-5.3-Flash
+        modelId: zai-org/GLM-5.3-Flash
+
+      deepseek-v3:
+        name: DeepSeek V3
+        modelId: deepseek-ai/DeepSeek-V3
+
+JANGAN harus memakai YAML secara khusus.
+Pilih format/config storage yang paling cocok dengan arsitektur Hermes yang sudah ada.
+Yang penting konsep dan behavior-nya seperti OpenCode:
+provider -> models -> modelID upstream.
+
+ATURAN BASE URL:
+
+SEMUA BASE URL PROVIDER HARUS CONFIGURABLE DARI ENV.
+
+Contoh:
+NVIDIA_BASE_URL=...
+ZAI_BASE_URL=...
+DEEPSEEK_BASE_URL=...
+
+Kode provider/adaptor TIDAK BOLEH memiliki operational hardcoded URL seperti:
+https://api.z.ai/...
+https://integrate.api.nvidia.com/...
+https://api.deepseek.com/...
+
+Source code hanya boleh mengetahui nama environment variable/config key, bukan endpoint permanen.
+
+Jika environment variable BASE_URL tidak tersedia:
+- jangan diam-diam memakai URL hardcoded.
+- berikan error konfigurasi yang jelas.
+- jangan fallback ke endpoint lain.
+
+ATURAN API KEY:
+
+API key selalu berasal dari environment/config secret.
+Jangan pernah:
+- hardcode API key
+- menyimpan secret di model registry
+- mencetak secret ke log
+- memasukkan secret ke commit
+- memasukkan secret ke test fixture
+
+Provider config hanya menyimpan NAMA environment variable credential.
+
+MODEL ID:
+
+Pisahkan dengan jelas:
+
+Provider ID:
+nvidia
+
+Hermes Model ID:
+glm-5.3-flash
+
+Upstream Model ID:
+zai-org/GLM-5.3-Flash
+
+Jangan menganggap:
+cline/z-ai/glm-5.3-flash
+sebagai provider ID.
+
+Jika existing Telegram/UI menggunakan:
+cline/z-ai/glm-5.3-flash
+
+buat mapping/alias yang backward-compatible jika memang diperlukan, tetapi jangan merusak model ID existing tanpa alasan.
+
+REGISTRY:
+
+Buat satu source of truth untuk provider + model registry.
+
+Jangan membuat:
+- Telegram punya daftar model sendiri
+- Model Router punya daftar model sendiri
+- AI Registry punya daftar model lain
+- provider adapter punya daftar model lain
+
+Semua harus membaca registry/config yang sama.
+
+MODEL ADDITION:
+
+Target behavior:
+
+Menambah model baru cukup dengan konfigurasi:
+
+provider:
+  nvidia:
+    models:
+      new-model:
+        name: New Model
+        modelId: upstream/new-model
+
+Tanpa:
+- membuat file TypeScript baru
+- mengubah Model Router
+- mengubah Telegram handler
+- mengubah AI Registry
+- membuat adapter baru
+
+Jika provider/protocol sudah didukung, model baru harus langsung dapat ditemukan registry.
+
+PROVIDER ADDITION:
+
+Jika provider memakai protocol yang sudah didukung (misalnya OpenAI-compatible):
+- provider baru harus bisa ditambahkan melalui config.
+- tidak perlu membuat adapter khusus.
+
+Jika protocol benar-benar berbeda:
+- tetap membutuhkan adapter sekali.
+- setelah adapter tersedia, model-model provider tersebut harus bisa ditambahkan tanpa coding.
+
+TELEGRAM:
+
+Jangan mengubah UX lebih dari yang diperlukan.
+
+`/model` harus mengambil provider dan model dari registry baru.
+
+Model yang disabled tidak boleh ditampilkan sebagai selectable model.
+
+Manual selection tetap.
+
+Fallback tetap disabled.
+
+Jangan menambahkan automatic model selection.
+
+AI AGENTS:
+
+Muse, DeepSeek, GLM dan agent lain tetap memilih model secara manual.
+Jangan mengubah kontrak agent profile kecuali benar-benar diperlukan untuk integrasi registry.
+
+BACKWARD COMPATIBILITY:
+
+Audit seluruh konfigurasi/model yang sudah ada.
+
+Migrasikan secara hati-hati agar:
+- model lama tetap terdeteksi jika memungkinkan
+- provider lama tidak hilang
+- API existing tetap kompatibel
+- Telegram `/model` tetap bekerja
+
+Jangan menghapus konfigurasi lama sebelum ada replacement yang aman.
+
+SECURITY:
+
+Tambahkan validasi untuk:
+- provider ID
+- model ID
+- upstream model ID
+- environment variable names
+- base URL
+- duplicate provider
+- duplicate model
+- invalid config
+- disabled model
+- secret leakage
+
+Base URL dari ENV harus divalidasi sebelum request.
+
+Jangan mengizinkan konfigurasi model menyuntikkan arbitrary Authorization header atau secret.
+
+TESTING:
+
+Tambahkan/update unit/integration tests untuk minimal:
+
+1. Load provider config.
+2. Load model config.
+3. Provider -> model resolution.
+4. Hermes model ID -> upstream model ID.
+5. Environment-based API key resolution.
+6. Environment-based BASE_URL resolution.
+7. Missing BASE_URL menghasilkan error.
+8. Missing API key menghasilkan error.
+9. Tidak ada hardcoded operational provider URL.
+10. Disabled model tidak selectable.
+11. Multiple models dalam satu provider.
+12. Multiple providers dengan protocol yang sama.
+13. Telegram `/model` membaca registry baru.
+14. Manual model selection tetap bekerja.
+15. Tidak ada fallback otomatis.
+16. Security/secret scan.
+
+JANGAN menjalankan live inference.
+
+JANGAN menggunakan API key asli.
+
+JANGAN mengubah `.env` production.
+
+JANGAN restart service.
+
+JANGAN reboot VPS.
+
+JANGAN push.
+
+SETELAH IMPLEMENTASI:
+
+Jalankan:
+- tests
+- typecheck
+- lint
+- format check
+- security tests
+- secret scan
+
+Kemudian audit source code untuk memastikan tidak ada operational hardcoded BASE_URL provider.
+
+Jika semua PASS, buat satu commit:
+
+refactor: make provider and model configuration modular
+
+Jangan push.
+
+LAPORAN AKHIR HARUS BERISI:
+
+1. Struktur config baru.
+2. Di mana provider registry disimpan.
+3. Di mana model registry disimpan.
+4. Bagaimana BASE_URL dibaca dari ENV.
+5. Bagaimana API key dibaca dari ENV.
+6. Contoh cara menambahkan model baru TANPA CODING.
+7. Provider/model yang berhasil dimigrasikan.
+8. Tests: passed/skipped/failed.
+9. Typecheck.
+10. Lint.
+11. Security.
+12. Commit hash.
+13. Push: NO.
+
+PENTING:
+- Jangan melakukan live inference.
+- Jangan mengubah API key.
+- Jangan menampilkan secret.
+- Jangan menambahkan fallback.
+- Jangan membuat automatic model binding.
+- Jangan mengubah Facebook/ContentPilot.
+- Jangan mengubah Muse Spark.
+- Jangan menyentuh fitur yang tidak diperlukan untuk refactor ini.
 ```
 # 
 ```
