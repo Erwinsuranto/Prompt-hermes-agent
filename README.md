@@ -34,7 +34,133 @@
 ```
 # 
 ```
+LANJUTKAN LIVE SHADOW — JANGAN RESET, JANGAN CODING
 
+Lanjutkan sesi monitoring REAL MT5 XAUUSD.m yang sedang berjalan.
+
+Kondisi terakhir:
+- 53 closed M5 sudah dievaluasi
+- signal: 0
+- Path A dan Path B sepakat pada seluruh 53 bar
+- data masih insufficient
+- market masih aktif
+- order_send: 0
+- order_check: 0
+- position changes: 0
+- order changes: 0
+
+JANGAN:
+- coding
+- modify file
+- commit
+- push
+- mengubah parameter
+- memaksa signal
+- mengaktifkan execution
+- membuka posisi
+
+TUJUAN:
+
+TERUSKAN monitoring sampai:
+
+1. VALID BUY ditemukan, atau
+2. VALID SELL ditemukan, atau
+3. market/session berakhir.
+
+Jangan berhenti hanya karena sudah melewati 53 candle.
+
+Untuk setiap closed M5 baru, evaluasi causal:
+
+M15 S/R
+→ kualitas S/R
+→ reaction
+→ reversal condition
+→ M5 confirmation
+→ Path A S/R-direct
+→ Path B S/R + engulfing
+→ final decision.
+
+INGAT RULE FINAL:
+
+S/R adalah prerequisite utama.
+
+PATH A:
+S/R valid + seluruh rule S/R reversal terpenuhi
+→ SIGNAL tanpa wajib engulfing.
+
+PATH B:
+S/R valid + reversal setup valid + engulfing valid
+→ SIGNAL.
+
+ENGULFING TANPA S/R VALID
+→ NO_TRADE.
+
+S/R lemah
+→ NO_TRADE.
+
+S/R hanya disentuh tanpa reaction/reversal
+→ NO_TRADE.
+
+Breakout/continuation yang valid
+→ NO_TRADE untuk reversal.
+
+Jangan menggunakan candle masa depan.
+
+Jangan menggunakan hindsight.
+
+Saat VALID SIGNAL ditemukan, tampilkan langsung:
+
+=== VALID LIVE SIGNAL FOUND ===
+
+timestamp:
+direction:
+path: A/B
+
+M15 S/R:
+zone:
+quality:
+structure:
+
+M5:
+OHLC:
+reaction:
+confirmation:
+engulfing:
+
+entry:
+SL:
+TP:
+RR:
+
+reason:
+causality:
+look-ahead:
+closed-candle:
+
+SAFETY:
+order_send:
+order_check:
+position_changes:
+order_changes:
+
+Setelah signal ditemukan:
+JANGAN EKSEKUSI.
+
+Kunci entry/SL/TP berdasarkan keputusan saat signal dibuat dan monitor outcome secara causal.
+
+Jika belum ada signal:
+tetap lanjutkan monitoring.
+
+Jangan menyimpulkan strategy profitable atau tidak profitable dari sesi ini.
+
+Jika sesi berakhir tanpa signal:
+laporkan DATA INSUFFICIENT dan seluruh statistik monitoring.
+
+FINAL:
+NO CODE
+NO COMMIT
+NO PUSH
+NO REAL ORDER
 ```
 # 
 ```
