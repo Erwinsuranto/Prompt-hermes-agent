@@ -14,7 +14,608 @@
 ```
 # 
 ```
+PHASE 27 — TELEGRAM MODEL & AGENT SELECTION
+===========================================
 
+Tujuan:
+Membuat Telegram Agent Hermes memiliki UI pemilihan AI/model seperti konsep pada screenshot user.
+
+Contoh UX:
+
+User:
+/model
+
+Bot:
+
+⚙️ Model Configuration
+
+Agent: Muse
+Provider: ...
+
+Select a model:
+
+[ model-1 ]
+[ model-2 ]
+[ model-3 ]
+
+[ ← Back ] [ ✕ Cancel ]
+
+User menekan tombol model.
+
+Bot:
+✅ Model switched to <model-id>
+
+Provider: <provider>
+Agent: <agent>
+Context: ...
+Capabilities: ...
+
+Setelah itu pesan chat berikutnya menggunakan model yang dipilih user.
+
+
+============================================================
+ATURAN ARSITEKTUR
+============================================================
+
+1. Audit Telegram Agent yang sudah ada terlebih dahulu.
+
+2. Gunakan:
+   - existing Telegram Agent
+   - existing AI Registry
+   - existing Agent Profile
+   - existing Model Registry
+   - existing Model Router
+   - existing provider architecture
+   - existing session/context system
+
+3. Jangan membuat AI runtime baru.
+
+4. Jangan membuat Model Router baru.
+
+5. Jangan membuat provider baru jika provider sudah tersedia.
+
+6. Jangan mengubah Agent Profile Muse/DeepSeek/GLM hanya untuk UI.
+
+7. Jangan membuat automatic model selection.
+
+8. Jangan membuat automatic fallback.
+
+9. Jangan membuat automatic model switching.
+
+10. Model hanya berubah ketika USER secara eksplisit memilih tombol/model.
+
+
+============================================================
+AGENT SELECTION
+============================================================
+
+Telegram juga harus dapat memilih Agent.
+
+Tambahkan command/menu jika architecture Telegram saat ini mendukung:
+
+/agent
+
+Contoh:
+
+🤖 Agent Configuration
+
+Select an agent:
+
+[ Muse ]
+[ DeepSeek ]
+[ GLM ]
+
+[ Back ] [ Cancel ]
+
+Ketika user memilih:
+
+Agent aktif berubah untuk session Telegram tersebut.
+
+Setelah agent dipilih, model tetap dipilih manual.
+
+Contoh:
+
+Agent:
+Muse
+
+Model:
+user memilih sendiri
+
+
+============================================================
+MODEL MENU
+============================================================
+
+Implementasikan:
+
+/model
+
+Flow:
+
+/model
+ ↓
+pilih Agent jika diperlukan
+ ↓
+pilih Provider
+ ↓
+pilih Model
+ ↓
+konfirmasi
+ ↓
+simpan pilihan ke session
+ ↓
+chat menggunakan agent + model tersebut
+
+
+Jika architecture existing lebih tepat:
+
+/agent
+→ pilih agent
+→ /model
+→ pilih model
+
+boleh digunakan.
+
+Gunakan desain paling sederhana yang sesuai architecture Hermes.
+
+
+============================================================
+PROVIDER MENU
+============================================================
+
+Jika Model Registry memiliki beberapa provider:
+
+tampilkan provider sebagai tombol.
+
+Contoh:
+
+Select provider:
+
+[ NVIDIA ]
+[ GLM ]
+[ DeepSeek ]
+[ OpenCode ]
+...
+
+Jangan menampilkan provider yang:
+- tidak terdaftar
+- disabled
+- tidak memiliki model aktif
+
+Jangan memilih provider otomatis.
+
+
+============================================================
+MODEL LIST
+============================================================
+
+Model list HARUS berasal dari Model Registry.
+
+Jangan hardcode daftar model di Telegram handler.
+
+Telegram UI hanya membaca registry.
+
+Untuk setiap model, tampilkan:
+
+- model ID/name
+- provider
+- status
+- capability ringkas jika tersedia
+
+Jangan menampilkan credential.
+
+
+============================================================
+SESSION STATE
+============================================================
+
+Simpan:
+
+active_agent_id
+active_model_id
+
+pada session Telegram sesuai session architecture existing.
+
+Jangan membuat global variable untuk user session.
+
+Session harus terisolasi:
+
+User A:
+agent = Muse
+model = model-A
+
+User B:
+agent = GLM
+model = model-B
+
+User A tidak boleh memengaruhi session User B.
+
+
+============================================================
+PERSISTENCE
+============================================================
+
+Jika existing Telegram session persistence tersedia:
+
+gunakan existing mechanism.
+
+Jika session memang hanya temporary/session-only:
+ikuti architecture tersebut.
+
+Jangan menambahkan database baru hanya untuk fitur ini.
+
+Jika pilihan model disimpan persistent:
+pastikan scope berdasarkan user/session/chat yang benar.
+
+
+============================================================
+CHAT ROUTING
+============================================================
+
+Setelah user memilih:
+
+Agent = Muse
+Model = explicit-model-id
+
+pesan:
+
+"Hello"
+
+harus menjadi:
+
+Telegram
+→ active agent
+→ agent profile
+→ explicit selected model
+→ existing Model Router
+→ provider
+→ response
+→ Telegram
+
+
+Tidak boleh:
+
+Telegram
+→ langsung provider
+
+Tidak boleh bypass:
+
+AI Registry
+Model Router
+Permission
+Context
+Agent Profile
+
+
+============================================================
+MODEL SWITCH
+============================================================
+
+Jika user memilih model lain:
+
+Model A
+→ User tekan Model B
+→ active model = Model B
+
+Pesan berikutnya menggunakan Model B.
+
+Jangan melakukan fallback otomatis.
+
+Jika Model B unavailable:
+
+tampilkan error:
+
+❌ Model unavailable.
+
+User harus memilih model lain secara manual.
+
+Jangan otomatis kembali ke Model A.
+
+
+============================================================
+AGENT SWITCH
+============================================================
+
+Jika user berpindah:
+
+Muse
+→ DeepSeek
+
+model sebelumnya tidak boleh otomatis dianggap sebagai model DeepSeek jika model tersebut tidak valid untuk DeepSeek.
+
+Jika model tidak kompatibel:
+
+active_model harus dikosongkan atau UI meminta user memilih model baru.
+
+Jangan memilih model otomatis.
+
+
+============================================================
+TELEGRAM UX
+============================================================
+
+Gunakan Inline Keyboard Telegram.
+
+Gunakan callback query yang aman.
+
+Jangan menggunakan callback data yang terlalu panjang.
+
+Gunakan identifier internal yang aman.
+
+Validasi callback:
+
+- user/session
+- agent
+- provider
+- model
+
+Jangan percaya callback data dari client.
+
+
+Contoh:
+
+/model
+
+⚙️ Model Configuration
+
+Agent: Muse
+Model: Not selected
+
+Provider:
+
+[ GLM ]
+[ NVIDIA ]
+[ OpenCode ]
+
+Setelah provider:
+
+Select model:
+
+[ model-1 ]
+[ model-2 ]
+[ model-3 ]
+
+[ ← Back ] [ ✕ Cancel ]
+
+
+Setelah pilihan:
+
+✅ Model selected
+
+Agent: Muse
+Model: model-1
+Provider: GLM
+
+Mode:
+Manual selection
+
+Fallback:
+Disabled
+
+
+============================================================
+PERMISSION & SECURITY
+============================================================
+
+Model selection tidak memberikan permission baru.
+
+Agent selection tidak memberikan permission baru.
+
+Pastikan:
+
+- user tidak dapat memilih agent disabled
+- user tidak dapat memilih model disabled
+- user tidak dapat memilih provider disabled
+- user tidak dapat mengakses model melalui path traversal
+- callback tidak dapat digunakan untuk mengubah session user lain
+- callback tidak dapat menaikkan permission
+- callback tidak dapat menjalankan tool
+- callback tidak dapat menjalankan command
+- callback tidak dapat memanggil arbitrary provider
+
+
+============================================================
+ADMIN
+============================================================
+
+Jika Telegram Agent sudah memiliki admin authorization:
+
+pastikan konfigurasi model user biasa tidak bisa mengakses admin-only functionality.
+
+Jangan mengubah existing admin policy.
+
+
+============================================================
+LIVE INFERENCE
+============================================================
+
+Jangan menjadikan live inference sebagai bagian dari unit test.
+
+Setelah fitur selesai:
+
+boleh siapkan flow agar Telegram siap melakukan inference.
+
+Namun jangan menjalankan inference otomatis saat test suite.
+
+
+============================================================
+TESTING
+============================================================
+
+Tambahkan test:
+
+1. /model menu
+2. provider list
+3. model list dari Model Registry
+4. select model
+5. session stores active_model_id
+6. /agent
+7. select agent
+8. agent/model isolation
+9. user A vs user B isolation
+10. disabled model
+11. disabled provider
+12. disabled agent
+13. invalid callback
+14. callback from another user
+15. unavailable model
+16. no automatic fallback
+17. no automatic model switching
+18. Model Router receives explicit model
+19. tool permission unchanged
+20. permission unchanged
+21. secret redaction
+22. malformed callback
+23. oversized callback
+24. session expiration behavior
+
+
+============================================================
+REGRESSION
+============================================================
+
+Pastikan tidak merusak:
+
+- AI Registry
+- Agent Profile System
+- Muse
+- DeepSeek
+- GLM
+- Model Registry
+- Model Router
+- Telegram Agent
+- Permission/Approval
+- Tools
+- Memory
+- Workflow
+- Autonomous Agent
+
+
+============================================================
+FRONTEND
+============================================================
+
+Jangan mengubah web frontend.
+
+Fokus Telegram Agent/backend.
+
+
+============================================================
+DOCUMENTATION
+============================================================
+
+Buat/update:
+
+docs/ai-agents/telegram-model-selection.md
+
+Jelaskan:
+
+- /agent
+- /model
+- provider selection
+- model selection
+- session behavior
+- manual model selection
+- no fallback
+- security
+- contoh penggunaan
+
+
+============================================================
+QUALITY GATES
+============================================================
+
+Jalankan:
+
+- full test suite
+- typecheck
+- lint
+- format
+- security tests
+- secret scan
+
+Jangan menjalankan live inference otomatis.
+
+
+============================================================
+MUSE SPARK
+============================================================
+
+Jangan mengubah:
+
+ai/learning/sources/temporary/muse-spark-1.3.md
+
+SHA wajib tetap:
+
+4c1030c406c5b315cf95cf493c781658d2bb58103821fb6d47181c78e9186d13
+
+
+============================================================
+GIT
+============================================================
+
+Jika semua quality gates lulus:
+
+commit:
+
+feat: add telegram agent and model selection
+
+Jangan push.
+
+
+============================================================
+FINAL REPORT
+============================================================
+
+PHASE 27 RESULT
+
+Telegram:
+- /agent:
+- /model:
+- inline keyboard:
+- provider selection:
+- model selection:
+
+Session:
+- agent isolation:
+- model isolation:
+- user isolation:
+
+Routing:
+- AI Registry:
+- Agent Profile:
+- Model Router:
+- explicit model:
+
+Fallback:
+- disabled:
+
+Security:
+- callback validation:
+- permission isolation:
+- secret scan:
+
+Tests:
+- passed:
+- skipped:
+- failed:
+
+Typecheck:
+Lint:
+Format:
+Security:
+
+Muse Spark SHA:
+- status:
+
+Git:
+- commit:
+- push: NO
+
+Live inference:
+NOT RUN
+
+Berhenti setelah laporan.
 ```
 # 
 ```
