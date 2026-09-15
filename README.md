@@ -38,6 +38,352 @@
 ```
 # 
 ```
+Lanjutkan Hermes Agent dari commit 7279ab9.
+
+TUJUAN:
+Aktifkan jalur NVIDIA menggunakan konfigurasi ENV-only dan uji live model GLM-5.3-Flash.
+
+JANGAN mengubah source code provider/model router kecuali ditemukan bug nyata pada implementasi refactor sebelumnya.
+
+==================================================
+1. AUDIT KONFIGURASI NVIDIA
+==================================================
+
+Periksa konfigurasi runtime Hermes.
+
+Pastikan provider:
+
+provider ID:
+nvidia
+
+protocol:
+openai-compatible
+
+Credential:
+NVIDIA_API_KEY
+
+Base URL:
+NVIDIA_BASE_URL
+
+JANGAN hardcode BASE_URL di source code.
+
+JANGAN hardcode API key.
+
+Nilai credential dan URL harus berasal dari environment runtime.
+
+==================================================
+2. AUDIT .ENV
+==================================================
+
+Periksa:
+
+/root/hermes-agent/.env
+
+Tanpa menampilkan secret.
+
+Pastikan:
+
+NVIDIA_API_KEY
+NVIDIA_BASE_URL
+
+Jika NVIDIA_API_KEY sudah ada:
+- gunakan yang sudah ada.
+- jangan mengganti.
+- jangan mencetak nilainya.
+
+Jika NVIDIA_BASE_URL sudah ada:
+- gunakan nilai yang sudah ada.
+- jangan mengganti secara otomatis.
+
+Jika salah satu belum ada:
+- JANGAN mengarang nilainya.
+- laporkan variable yang belum tersedia.
+- jangan meminta saya mengirim API key ke chat.
+
+==================================================
+3. AUDIT SYSTEMD ENVIRONMENT
+==================================================
+
+Pastikan service Hermes benar-benar menerima:
+
+NVIDIA_API_KEY
+NVIDIA_BASE_URL
+
+Bandingkan keberadaan/length/fingerprint secara aman.
+
+JANGAN mencetak:
+- API key
+- Authorization header
+- secret lengkap.
+
+Jika .env memiliki credential tetapi process Hermes tidak mendapatkannya:
+- perbaiki mekanisme environment loading secara aman.
+- jangan mengubah nilai secret.
+- restart service hanya jika diperlukan untuk memuat ENV.
+
+Jangan reboot VPS.
+
+==================================================
+4. MODEL GLM NVIDIA
+==================================================
+
+Pastikan registry memiliki model:
+
+Hermes Model ID:
+glm-5.3-flash
+
+Display Name:
+GLM-5.3-Flash
+
+Provider:
+nvidia
+
+Upstream Model ID:
+gunakan ID NVIDIA yang sudah dikonfigurasi/terverifikasi di repository atau konfigurasi project.
+
+JANGAN mengarang upstream model ID.
+
+PENTING:
+
+Jangan menggunakan:
+
+cline/z-ai/glm-5.3-flash
+
+sebagai upstream NVIDIA jika registry memang memisahkan Hermes Model ID dan upstream Model ID.
+
+Jika existing alias:
+
+cline/z-ai/glm-5.3-flash
+
+masih diperlukan untuk backward compatibility Telegram, pertahankan alias tersebut tanpa menjadikannya provider ID.
+
+==================================================
+5. JANGAN GUNAKAN Z.AI UNTUK TEST INI
+==================================================
+
+Smoke test harus melalui:
+
+Telegram/Model Router
+→ provider nvidia
+→ NVIDIA_BASE_URL
+→ NVIDIA_API_KEY
+→ GLM-5.3-Flash
+
+Jangan menggunakan:
+
+ZAI_API_KEY
+ZAI_BASE_URL
+api.z.ai
+
+untuk test NVIDIA.
+
+==================================================
+6. VALIDASI CONFIG
+==================================================
+
+Pastikan resolver menghasilkan:
+
+provider = nvidia
+model = glm-5.3-flash
+upstreamModelId = konfigurasi NVIDIA
+baseURL = ENV NVIDIA_BASE_URL
+credential = ENV NVIDIA_API_KEY
+
+Tidak boleh ada fallback ke Z.AI.
+
+Tidak boleh ada automatic model fallback.
+
+Tidak boleh ada automatic provider fallback.
+
+==================================================
+7. SERVICE
+==================================================
+
+Jika perubahan ENV/config memang diperlukan:
+
+- restart Hermes service
+- jangan reboot VPS
+
+Setelah restart:
+
+- systemctl status Hermes
+- /health = 200
+- /ready = 200 / DB ok
+- Telegram polling kembali aktif
+
+==================================================
+8. LIVE SMOKE TEST
+==================================================
+
+Hanya jalankan jika:
+
+NVIDIA_API_KEY tersedia
+dan
+NVIDIA_BASE_URL tersedia
+dan
+model NVIDIA berhasil resolve.
+
+Gunakan request minimal:
+
+Reply exactly: NVIDIA_GLM_RUNTIME_OK
+
+Pastikan request benar-benar melalui provider:
+
+nvidia
+
+dan bukan Z.AI.
+
+Catat hanya:
+
+- provider
+- Hermes model ID
+- upstream model ID
+- HTTP status
+- latency
+- success/failure
+- error category jika gagal
+
+JANGAN mencetak API key atau Authorization header.
+
+==================================================
+9. JIKA LIVE TEST GAGAL
+==================================================
+
+Bedakan secara jelas:
+
+A. NVIDIA_API_KEY tidak masuk process
+B. NVIDIA_BASE_URL tidak masuk process
+C. credential ditolak NVIDIA
+D. BASE_URL salah/tidak reachable
+E. upstream model ID salah/tidak tersedia
+F. request protocol/payload tidak cocok
+G. masalah Telegram/session/router
+
+Jangan langsung mengubah kode.
+
+Jika error berasal dari credential:
+- jangan mengganti API key otomatis.
+
+Jika error berasal dari upstream model ID:
+- jangan menebak ID.
+- laporkan ID yang sedang dikonfigurasi dan respons upstream.
+
+==================================================
+10. Z.AI
+==================================================
+
+Jangan menghapus provider Z.AI.
+
+Z.AI tetap menjadi provider terpisah dan konfigurasi tetap:
+
+ZAI_API_KEY
+ZAI_BASE_URL
+
+Jangan mencampurkan credential NVIDIA dan Z.AI.
+
+==================================================
+11. TEST SUITE
+==================================================
+
+Setelah konfigurasi/perbaikan:
+
+jalankan:
+- tests
+- typecheck
+- lint
+- format check
+- security tests
+- secret scan
+
+Pastikan tidak ada secret di output.
+
+==================================================
+12. GIT
+==================================================
+
+Jika hanya perubahan ENV production:
+- jangan commit secret.
+
+Jika ada perubahan source code yang benar-benar diperlukan:
+commit:
+
+feat: configure nvidia glm runtime
+
+Jangan push.
+
+==================================================
+13. LAPORAN AKHIR
+==================================================
+
+Berikan laporan:
+
+NVIDIA PROVIDER:
+READY / NOT READY
+
+NVIDIA_API_KEY:
+PRESENT / MISSING / NOT LOADED
+
+NVIDIA_BASE_URL:
+PRESENT / MISSING / NOT LOADED
+
+MODEL:
+glm-5.3-flash
+
+UPSTREAM MODEL:
+...
+
+ROUTE:
+NVIDIA / Z.AI
+
+LIVE TEST:
+PASS / FAIL / NOT RUN
+
+HTTP:
+...
+
+LATENCY:
+...
+
+SERVICE:
+ACTIVE / FAILED
+
+HEALTH:
+...
+
+READY:
+...
+
+TELEGRAM:
+ONLINE / OFFLINE
+
+TESTS:
+passed / skipped / failed
+
+TYPECHECK:
+...
+
+LINT:
+...
+
+SECURITY:
+...
+
+COMMIT:
+...
+
+PUSH:
+NO
+
+PENTING:
+- Jangan tampilkan secret.
+- Jangan minta API key dikirim ke chat.
+- Jangan hardcode URL.
+- Jangan hardcode API key.
+- Jangan fallback ke Z.AI.
+- Jangan automatic model fallback.
+- Jangan automatic provider fallback.
+- Jangan mengubah Facebook/ContentPilot.
+- Jangan mengubah Muse Spark.
 
 ```
 # 
