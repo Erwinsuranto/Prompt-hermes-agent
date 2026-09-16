@@ -26,7 +26,40 @@
 ```
 # 
 ```
+NEXT HERMES AGENT ROADMAP AUDIT
 
+Project: /root/hermes-agent
+
+Muse Spark 1.3 sudah FINAL:
+- ai/agents/muse/agent.md permanen
+- temporary Muse MD sudah dihapus
+- runtime smoke setelah restart PASS
+- commit 086787e sudah di-push
+- HEAD == origin/main
+- working tree clean
+
+Sekarang JANGAN melakukan coding.
+
+Audit repository dan dokumentasi roadmap Hermes Agent untuk menentukan:
+
+1. Modul/model/provider apa yang memang menjadi pekerjaan berikutnya setelah Muse.
+2. Urutan implementasi yang sudah direncanakan.
+3. File/struktur yang sudah tersedia untuk modul berikutnya.
+4. Apakah ada pekerjaan yang tertunda atau dependency yang harus diselesaikan lebih dahulu.
+5. Pastikan desain tetap modular dan tidak mengubah Agent Core secara tidak perlu.
+
+Jangan mengubah file.
+Jangan membuat fitur.
+Jangan commit/push.
+Jangan mengubah .env, provider, routing, fallback, Telegram, atau Muse.
+
+Berikan laporan:
+- roadmap yang ditemukan
+- pekerjaan berikutnya
+- alasan urutannya berdasarkan dokumentasi/repository
+- file yang terkait
+- dependency
+- rekomendasi langkah implementasi berikutnya
 ```
 # 
 ```
