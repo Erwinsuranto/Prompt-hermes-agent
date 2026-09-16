@@ -34,7 +34,58 @@
 ```
 # 
 ```
+Lanjutkan checkpoint final Muse Spark 1.3 di /root/hermes-agent.
 
+Kondisi yang sudah diverifikasi:
+- ai/agents/muse/agent.md sudah diperbarui.
+- ai/learning/sources/temporary/muse-spark-1.3.md sudah dihapus.
+- Test: 1743 passed / 6 skipped / 0 failed.
+- Typecheck 24/24 PASS.
+- Lint 0 error.
+- Format PASS.
+- Security scan PASS.
+- Runtime smoke Muse: MUSE_FINAL_OK.
+- HEAD 287856b sama dengan origin/main.
+
+Tugas:
+
+1. Periksa git diff dan git status.
+2. Pastikan perubahan hanya terkait:
+   - ai/agents/muse/agent.md
+   - penghapusan ai/learning/sources/temporary/muse-spark-1.3.md
+3. Jika ada perubahan lain yang tidak terkait, JANGAN ikut commit dan laporkan.
+4. Jalankan test yang relevan sekali lagi sebelum commit.
+5. Commit dengan pesan yang jelas, misalnya:
+   feat(muse): make Muse agent definition permanent
+6. Push commit ke origin/main.
+7. Verifikasi HEAD == origin/main.
+8. Setelah push berhasil, restart service hermes-agent SATU KALI menggunakan mekanisme service yang memang digunakan project. Jangan mengganti metode deployment/service manager.
+9. Setelah restart, verifikasi:
+   - service active/running
+   - /health
+   - /ready jika tersedia
+10. Jalankan runtime smoke test Muse SETELAH restart.
+11. Pastikan model:
+   cline/meta/muse-spark-1.3-contributor
+   tetap ter-resolve melalui NVIDIA API Proxy.
+12. Pastikan tidak ada fallback/routing yang berubah.
+13. Jangan mengubah .env atau secret.
+
+Jika commit/push gagal, jangan force push.
+Jika restart gagal, jangan melakukan perubahan konfigurasi secara otomatis; berhenti dan laporkan.
+
+Laporan akhir:
+- commit hash
+- push PASS/FAIL
+- HEAD dan origin/main
+- service status setelah restart
+- health
+- ready
+- Muse runtime smoke setelah restart
+- model ID yang digunakan
+- test result
+- file yang berubah
+- apakah working tree clean
 ```
 # 
 ```
