@@ -96,7 +96,90 @@
 
 # 
 ```
+LIVE SHADOW MONITOR — SIGNAL VALID SAJA
 
+Jalankan monitoring REAL XAUUSD dari MT5 menggunakan kode terbaru
+di origin/main.
+
+Mode:
+- SHADOW ONLY
+- JANGAN order_send
+- JANGAN order_check
+- JANGAN membuka/mengubah posisi
+- gunakan candle CLOSED saja
+- forming candle dilarang
+- no look-ahead
+- gunakan PATH A + PATH B + PATH C terbaru
+
+TUJUAN:
+Pantau market secara langsung dan TAMPILKAN HANYA jika muncul signal
+valid.
+
+Signal yang boleh ditampilkan:
+
+PATH A:
+- S/R qualified
+- reaction/rejection valid
+- confirmation valid
+- direction valid
+
+PATH B:
+- S/R qualified
+- TRUE engulfing
+- confirmation valid
+- direction valid
+
+PATH C:
+- trend M15 jelas
+- pullback valid
+- retest level valid
+- reaction/confirmation valid
+- candle CLOSED
+- continuation searah trend
+
+Jika belum ada signal:
+JANGAN tampilkan daftar NO_TRADE panjang.
+Cukup tampilkan:
+WAITING — no valid signal
+
+Jika ada signal, tampilkan langsung:
+
+========== VALID SIGNAL ==========
+TIME:
+SYMBOL:
+DIRECTION: BUY/SELL
+PATH: A/B/C
+TYPE:
+ENTRY:
+SL:
+TP:
+M15 TREND:
+LEVEL:
+CONFIRMATION:
+REASON:
+DECISION_CANDLE:
+==================================
+
+Untuk PATH C, jelaskan singkat:
+trend → pullback → retest → confirmation → continuation.
+
+Jangan menggunakan hasil masa depan/outcome untuk menentukan signal.
+
+Jangan mengubah parameter atau rule.
+Jangan coding.
+Jangan commit.
+Jangan push.
+
+Safety setiap cycle:
+ORDER_SEND=0
+ORDER_CHECK=0
+POSITION_CHANGES=0
+ORDER_CHANGES=0
+
+PENTING:
+Jangan memberi signal hanya karena ingin ada signal.
+Kalau tidak memenuhi rule → WAITING.
+Kalau valid → tampilkan SIGNAL segera setelah candle confirmation CLOSED.
 ```
 
 # 
