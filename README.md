@@ -18,7 +18,82 @@
 ```
 # 
 ```
+TASK — AKTIFKAN INSTRUKSI PERMANEN MUSE
 
+Project: /root/hermes-agent
+
+Fokus HANYA pada Muse Spark 1.3.
+
+Jangan urus masalah DeepSeek HTTP 403 sekarang.
+Jangan mengerjakan Task 2 skill.md.
+
+Target:
+/root/hermes-agent/ai/agents/muse/agent.md
+
+Tujuan:
+Pastikan isi agent.md bukan hanya file/persona statis, tetapi benar-benar menjadi instruksi yang digunakan oleh Muse saat runtime.
+
+LANGKAH:
+
+1. Audit source code Hermes untuk mengetahui bagaimana agent.md dari agent lain dimuat/digunakan.
+2. Jika sudah ada mekanisme loader/agent instruction existing, gunakan mekanisme tersebut.
+3. Jangan membuat sistem instruction baru jika sistem existing bisa digunakan.
+4. Pastikan:
+   ai/agents/muse/agent.md
+   benar-benar ditemukan dan dimuat ketika agent Muse diaktifkan.
+5. Pastikan instruksi dari agent.md masuk ke context/request Muse pada runtime.
+6. Jangan menggunakan ai/learning sebagai mekanisme instruksi Muse.
+7. Jangan menghidupkan learning pipeline.
+8. Jangan mengembalikan muse-spark-1.3.md yang sudah dihapus.
+
+TEST WAJIB:
+
+Buat/gunakan test yang dapat membuktikan:
+
+A. Muse agent ditemukan.
+B. agent.md ditemukan.
+C. agent.md berhasil dibaca.
+D. Instruksi agent.md masuk ke runtime context Muse.
+E. Instruksi tersebut tidak hanya dibaca tetapi benar-benar diteruskan pada request/model invocation.
+F. Model ID tetap:
+   cline/meta/muse-spark-1.3-contributor
+G. Provider tetap NVIDIA API Proxy.
+H. Tidak ada fallback.
+I. Tidak mengubah routing.
+
+Untuk membuktikan E, gunakan seam/mock atau instrumentation test jika live response tidak dapat membuktikannya secara aman.
+Jangan membocorkan API key atau secret.
+
+PENTING:
+- Jangan mengubah Agent Core kecuali audit membuktikan perubahan minimal memang diperlukan untuk existing agent instruction mechanism.
+- Jangan mengubah Model Router.
+- Jangan mengubah provider.
+- Jangan mengubah NVIDIA API Proxy.
+- Jangan mengubah Telegram.
+- Jangan mengubah .env.
+- Jangan mengerjakan DeepSeek.
+- Jangan mengerjakan skill.md.
+- Jangan commit/push dulu.
+
+Setelah implementasi:
+- test terkait Muse
+- typecheck
+- lint
+- format
+- security scan
+
+LAPORAN WAJIB:
+1. Bagaimana agent.md dimuat.
+2. Di file/source code mana loader-nya.
+3. Bagaimana instruksi masuk ke runtime context.
+4. Bukti test bahwa instruksi benar-benar diteruskan ke Muse.
+5. Model ID.
+6. Provider.
+7. Fallback.
+8. Semua file yang berubah.
+9. Jumlah test pass/fail/skip.
+10. Apakah Muse sekarang benar-benar mengikuti agent.md saat runtime.
+11. Jangan commit/push.
 ```
 # 
 ```
