@@ -14,7 +14,62 @@
 ```
 # 
 ```
+LIVE CHAT TEST — MUSE SPARK 1.3
 
+Project: /root/hermes-agent
+
+Jangan commit/push dan jangan mengubah kode.
+Jangan mengubah provider, routing, fallback, .env, atau konfigurasi.
+
+Tujuan:
+Menguji chat nyata Muse setelah system instruction dari:
+
+ai/agents/muse/agent.md
+
+sudah di-wire ke contextBuilder.
+
+Lakukan test melalui jalur chat Telegram yang digunakan Hermes, bukan hanya unit test.
+
+TEST 1 — Identity
+Kirim pesan sederhana yang meminta Muse menjelaskan siapa dirinya dan model yang sedang digunakan.
+
+TEST 2 — Instruction adherence
+Kirim pesan yang menguji apakah Muse mengikuti aturan/instruction yang berasal dari agent.md.
+Gunakan aturan yang memang tertulis di agent.md sebagai dasar pengujian, jangan membuat aturan baru.
+
+TEST 3 — Normal coding task
+Kirim tugas coding sederhana dan minta Muse memberikan solusi.
+Pastikan respons berasal dari Muse melalui provider yang dikonfigurasi.
+
+TEST 4 — Context persistence
+Kirim follow-up yang merujuk pada percakapan sebelumnya dan lihat apakah konteks chat tetap bekerja.
+
+VERIFIKASI:
+- agent: muse
+- model exact: cline/meta/muse-spark-1.3-contributor
+- provider: nvidia-api
+- system instruction dari agent.md ter-inject
+- tidak ada fallback
+- tidak ada error Telegram
+- response berhasil diterima
+
+Jika ada log request/response, jangan tampilkan API key, token, authorization header, atau secret.
+
+Jangan menganggap PASS hanya karena response HTTP 200.
+Periksa juga isi response dan bukti bahwa instruction Muse benar-benar diterapkan.
+
+Setelah selesai laporkan:
+1. Pesan test yang dikirim
+2. Ringkasan jawaban Muse
+3. Apakah instruction agent.md terlihat diterapkan
+4. Model ID
+5. Provider
+6. Fallback
+7. Status Telegram
+8. PASS/FAIL tiap test
+9. Apakah ada file yang berubah
+
+Jangan commit/push.
 ```
 # 
 ```
