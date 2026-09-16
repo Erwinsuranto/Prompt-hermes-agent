@@ -10,7 +10,35 @@
 ```
 # 
 ```
+Kita berada di project /root/hermes-agent.
 
+Lanjutkan dari checkpoint saat ini. Jangan mengubah kode, konfigurasi, dependency, atau membuat fitur baru.
+
+Tugas:
+1. Periksa git status dan pastikan working tree sesuai checkpoint.
+2. Verifikasi commit terbaru:
+   287856b feat: simplify telegram provider model selection (lokal saja).
+3. Jika commit 287856b memang belum ada di origin/main, push ke:
+   origin main
+4. Jangan melakukan amend, reset, rebase, force push, atau menghapus commit.
+5. Setelah push, verifikasi:
+   - git status
+   - git log -1 --oneline
+   - git rev-parse HEAD
+   - git rev-parse origin/main
+6. Pastikan HEAD dan origin/main sama.
+7. Jangan restart service karena push ini tidak membutuhkan restart.
+8. Jangan mengubah .env atau secret.
+
+Jika sebelum push ditemukan perubahan yang tidak terkait atau kondisi yang mencurigakan, JANGAN dipaksa. Berhenti dan laporkan kondisinya.
+
+Di akhir, berikan laporan singkat:
+- commit yang dipush
+- hasil push
+- HEAD
+- origin/main
+- apakah keduanya sama
+- git status
 ```
 # 
 ```
