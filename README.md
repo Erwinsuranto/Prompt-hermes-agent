@@ -41,9 +41,52 @@
 ```
 # 
 ```
+Lanjutkan implementasi permanen Muse Spark 1.3.
 
+Source sementara:
+/root/hermes-agent/ai/learning/sources/temporary/muse-spark-1.3.md
+
+Target permanen:
+/root/hermes-agent/ai/agents/muse/agent.md
+
+Tugas:
+1. Baca kedua file secara lengkap.
+2. Bandingkan isinya sebelum melakukan perubahan.
+3. Ambil HANYA informasi yang relevan untuk runtime/persona/instruction/capabilities/batasan Muse Spark 1.3 dari muse-spark-1.3.md.
+4. Gabungkan informasi tersebut ke ai/agents/muse/agent.md dengan struktur yang rapi.
+5. Jangan copy mentah seluruh file dan jangan membuat duplikasi.
+6. Pertahankan informasi yang sudah benar di agent.md.
+7. Jangan memasukkan catatan learning, eksperimen, temporary metadata, atau informasi yang memang hanya diperlukan oleh learning pipeline.
+8. Pastikan konfigurasi/provider/model ID Muse tetap menggunakan mekanisme Hermes yang sudah ada.
+9. Jangan mengubah Agent Core, provider routing, fallback, NVIDIA API Proxy, Telegram flow, atau .env.
+10. Setelah perubahan, audit hasil akhir agent.md dan pastikan tidak ada konflik atau instruksi yang saling bertentangan.
+
+TEST:
+- Jalankan test Muse/model terkait.
+- Jalankan typecheck.
+- Jalankan lint.
+- Jalankan format check.
+- Jalankan test suite yang relevan.
+- Jika ada runtime/seam test Muse, jalankan juga.
+
+SECURITY:
+- Jangan menampilkan API key/secret.
+- Jangan mengubah .env.
+
+PENTING:
+- JANGAN hapus muse-spark-1.3.md dulu.
+- JANGAN commit.
+- JANGAN push.
+- JANGAN restart production service kecuali benar-benar diperlukan untuk test; jika perlu, laporkan dahulu.
+
+Di akhir laporkan:
+A. Apa saja yang dipindahkan dari muse-spark-1.3.md.
+B. Apa yang sengaja tidak dipindahkan dan alasannya.
+C. Perubahan pada agent.md.
+D. Hasil test.
+E. Apakah ada konflik/duplikasi.
+F. Daftar file yang berubah.
 ```
-`
 
 # 
 ```
