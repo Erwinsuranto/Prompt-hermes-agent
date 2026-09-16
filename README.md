@@ -30,7 +30,38 @@
 ```
 # 
 ```
+Sekarang FINALIZE perubahan Muse.
 
+Jalankan hanya:
+
+1. git status --short
+2. git diff -- ai/agents/muse/agent.md
+3. git diff --stat
+
+Pastikan hanya ada:
+- ai/agents/muse/agent.md
+- deleted: ai/learning/sources/temporary/muse-spark-1.3.md
+
+Jika benar, commit:
+
+feat(muse): make Muse agent definition permanent
+
+Lalu:
+git push origin main
+
+Setelah push WAJIB verifikasi:
+git status
+git log -1 --oneline
+git rev-parse HEAD
+git rev-parse origin/main
+
+Pastikan HEAD == origin/main dan working tree clean.
+
+Jangan force push, amend, reset, atau rebase.
+Jangan mengubah kode/config/.env/provider/routing.
+Jangan restart service lagi.
+
+Laporkan hasil commit dan push secara jelas.
 ```
 # 
 ```
