@@ -22,6 +22,87 @@
 ```
 # 
 ```
+TASK 1 — AKTIFKAN DEEPSEEK
+
+Project: /root/hermes-agent
+
+Implementasikan HANYA Task 1 dari roadmap:
+mengaktifkan provider DeepSeek melalui mekanisme provider existing Hermes.
+
+MODEL ID WAJIB:
+cline/deepseek/deepseek-v4.1-flash
+
+Ketentuan:
+1. Audit provider registry/config existing terlebih dahulu.
+2. Ikuti format provider yang sudah digunakan Hermes.
+3. Gunakan HERMES_PROVIDERS_JSON / environment-based configuration sesuai arsitektur existing.
+4. Jangan hardcode API key atau secret.
+5. Jangan membuat provider system baru jika mekanisme existing sudah mendukung.
+6. Jangan mengubah Agent Core.
+7. Jangan mengubah Model Router.
+8. Jangan mengubah approval layer.
+9. Jangan mengubah Muse Spark 1.3 yang sudah finalized.
+10. Jangan mengubah Telegram.
+11. Jangan menambahkan fallback otomatis.
+
+Provider:
+- Provider: DeepSeek
+- Model: cline/deepseek/deepseek-v4.1-flash
+
+WORKER ROLE:
+Pastikan worker dapat:
+- mengenali provider DeepSeek
+- resolve model ID secara exact
+- memilih model tersebut melalui registry existing
+- mengirim request melalui provider yang benar
+- menerima response
+- tidak berpindah/fallback ke provider lain
+
+TEST WAJIB:
+- provider registry/contract test
+- model selection test
+- worker-role test
+- live smoke test menggunakan:
+  cline/deepseek/deepseek-v4.1-flash
+- typecheck
+- lint
+- format check
+- security/secret scan
+
+Jika credential DeepSeek belum tersedia:
+- JANGAN membuat credential palsu
+- JANGAN memasukkan key ke source code
+- tandai live smoke sebagai BLOCKED
+- tetap jalankan semua test yang tidak membutuhkan credential
+
+Jika live smoke menggunakan credential environment yang sudah tersedia:
+- pastikan output tidak membocorkan secret
+- pastikan response benar-benar berasal dari provider/model DeepSeek yang diminta
+- pastikan tidak ada fallback diam-diam
+
+PENTING:
+- Jangan mengerjakan Task 2 skill.md.
+- Jangan mengubah Muse.
+- Jangan mengubah routing/fallback existing.
+- Jangan mengubah .env secara manual.
+- Jangan commit.
+- Jangan push.
+- Jangan melakukan perubahan di luar scope DeepSeek.
+
+Jika konfigurasi runtime memang membutuhkan restart untuk validasi, gunakan mekanisme service existing dan lakukan hanya setelah perubahan tervalidasi.
+
+LAPORAN:
+A. File yang berubah
+B. Provider ID
+C. Model ID exact
+D. Worker-role test
+E. Contract test
+F. Live smoke test
+G. Typecheck/lint/format/security
+H. Provider yang benar-benar menerima request
+I. Apakah terjadi fallback
+J. git status
+K. Apakah siap commit atau masih BLOCKED
 
 ```
 # 
