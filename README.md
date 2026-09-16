@@ -38,7 +38,64 @@
 ```
 # 
 ```
+FINAL AUDIT Muse Spark 1.3 — sebelum menghapus source temporary.
 
+Project: /root/hermes-agent
+
+Target permanen:
+/root/hermes-agent/ai/agents/muse/agent.md
+
+Source temporary:
+/root/hermes-agent/ai/learning/sources/temporary/muse-spark-1.3.md
+
+Lakukan audit final secara READ-ONLY terlebih dahulu.
+
+1. Bandingkan isi kedua file secara lengkap.
+2. Pastikan seluruh informasi Muse yang diperlukan untuk runtime sudah tersedia secara permanen di:
+   ai/agents/muse/agent.md
+3. Cari apakah source code Hermes masih mereferensikan:
+   ai/learning/sources/temporary/muse-spark-1.3.md
+4. Pastikan runtime Muse tidak bergantung pada learning pipeline.
+5. Pastikan model ID, persona, capabilities, constraints, dan instruction penting Muse sudah berada di struktur permanen.
+6. Pastikan tidak ada informasi penting yang hanya tersisa di file temporary.
+
+Jika dan HANYA jika semua pemeriksaan PASS:
+
+7. Hapus:
+   ai/learning/sources/temporary/muse-spark-1.3.md
+
+8. Jangan hapus README.md di folder temporary jika masih dibutuhkan untuk dokumentasi.
+9. Jalankan test suite lengkap setelah penghapusan.
+10. Jalankan typecheck, lint, format check, dan security scan.
+11. Jalankan runtime smoke test Muse via NVIDIA API Proxy.
+
+PENTING:
+- Jangan mengubah Agent Core.
+- Jangan mengubah provider/routing.
+- Jangan mengubah fallback.
+- Jangan mengubah NVIDIA API Proxy.
+- Jangan mengubah Telegram.
+- Jangan mengubah .env atau secret.
+- Jangan membuat fitur baru.
+
+Jika audit menemukan informasi penting yang belum masuk agent.md:
+JANGAN hapus file temporary.
+Berhenti dan laporkan apa yang masih kurang.
+
+Jika semua PASS:
+- hapus file temporary
+- test ulang
+- JANGAN commit/push dulu.
+
+Laporan akhir:
+A. Audit sebelum penghapusan
+B. Referensi runtime yang ditemukan
+C. File temporary dihapus atau tidak
+D. Hasil test setelah penghapusan
+E. Typecheck/lint/format/security
+F. Runtime smoke Muse
+G. Daftar file yang berubah
+H. Status git
 ```
 # 
 ```
