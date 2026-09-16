@@ -101,7 +101,81 @@
 
 # 
 ```
+DIAGNOSIS TELEGRAM → MUSE → NVIDIA TIMEOUT
 
+Project: /root/hermes-agent
+
+Kondisi:
+- Telegram menerima pesan.
+- Pesan "Halo" mendapat respons.
+- Prompt normal tentang prompt injection mengalami:
+  Provider "nvidia-api" request failed:
+  The operation was aborted due to timeout
+- Setelah timeout, "Halo" kembali mendapat respons.
+
+JANGAN mengubah kode terlebih dahulu.
+JANGAN menonaktifkan security.
+JANGAN mengubah jailbreak/security-learning.
+JANGAN mengubah provider/routing/fallback.
+JANGAN mengubah .env.
+JANGAN commit/push.
+
+Audit READ-ONLY:
+
+1. Periksa apps/api/src/ai/telegram-chat.ts.
+2. Trace alur lengkap:
+   Telegram message
+   → contextBuilder
+   → Muse agent.md injection
+   → model selection
+   → NVIDIA API Proxy
+   → upstream
+   → Telegram response.
+
+3. Bandingkan request "Halo" dengan prompt yang mengalami timeout.
+4. Tentukan apakah "Halo" merupakan canned/static Telegram response atau benar-benar request ke Muse model.
+5. Periksa log timestamp request yang timeout.
+6. Catat elapsed time sampai timeout.
+7. Pastikan apakah agent.md ikut masuk ke request.
+8. Ukur/cek ukuran system instruction + user prompt + context.
+9. Pastikan contextBuilder tidak melakukan loop, retry berlebihan, atau menunggu proses yang tidak selesai.
+10. Pastikan security-learning tidak menyebabkan request timeout.
+11. Pastikan model exact:
+    cline/meta/muse-spark-1.3-contributor
+12. Pastikan provider:
+    nvidia-api
+13. Pastikan tidak terjadi fallback.
+
+TEST READ-ONLY:
+
+A. Telegram "Halo"
+B. Telegram "2+2 berapa?"
+C. Telegram "Jelaskan apa itu Python dalam satu kalimat."
+
+Tujuannya membedakan:
+- canned response Telegram
+- model request berhasil
+- model request timeout.
+
+Jangan mengirim jailbreak.
+Jangan mengubah security.
+
+Jika ditemukan titik timeout, JANGAN memperbaikinya dulu.
+Laporkan akar masalah dan file yang kemungkinan perlu diperbaiki.
+
+LAPORAN:
+- Apakah Halo memanggil model atau canned response
+- Prompt sederhana memanggil model atau tidak
+- Titik timeout
+- elapsed time
+- model ID
+- provider
+- agent.md ter-inject atau tidak
+- security-learning terlibat atau tidak
+- fallback
+- kemungkinan root cause
+- file yang perlu diperbaiki
+- git status
 ```
 
 # 
